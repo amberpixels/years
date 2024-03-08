@@ -1,7 +1,7 @@
 package years_test
 
 import (
-	years "github.com/amberpixels/era"
+	"github.com/amberpixels/years"
 	"testing"
 	"time"
 )
