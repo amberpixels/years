@@ -1,37 +1,33 @@
 package years_test
 
 import (
+	"fmt"
 	"github.com/amberpixels/years"
-	"testing"
+	"github.com/expectto/be/be_time"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"time"
 )
 
-func TestParseTimeUnixTimestamp(t *testing.T) {
-	timeStr := "1709682885"
-	expectedTime := time.Unix(1709682885, 0)
+var _ = Describe("Years", func() {
+	It("should parse Unix timestamp", func() {
+		var timestamp int64 = 1709682885
 
-	parsedTime, err := years.ParseTime(timeStr)
-	if err != nil {
-		t.Errorf("Error parsing time: %v", err)
-	}
+		parsedTime, err := years.ParseTime(fmt.Sprintf("%d", 1709682885))
+		Expect(err).Should(Succeed())
 
-	if !parsedTime.Equal(expectedTime) {
-		t.Errorf("Parsed time doesn't match expected time. Expected: %v, Got: %v", expectedTime, parsedTime)
-	}
-}
+		Expect(parsedTime).To(be_time.Unix(timestamp))
+	})
 
-func TestParseTimeDateOnly(t *testing.T) {
-	timeStr := "2024-03-06"
-	expectedTime, _ := time.Parse(time.DateOnly, timeStr)
+	It("should parse DateOnly date", func() {
+		timeStr := "2024-03-06"
+		expectedTime, _ := time.Parse(time.DateOnly, timeStr)
 
-	years.SetDefaults(years.WithLayouts(time.DateOnly))
+		years.SetDefaults(years.WithLayouts(time.DateOnly))
 
-	parsedTime, err := years.ParseTime(timeStr)
-	if err != nil {
-		t.Errorf("Error parsing time: %v", err)
-	}
+		parsedTime, err := years.ParseTime(timeStr)
+		Expect(err).Should(Succeed())
+		Expect(parsedTime).To(Equal(expectedTime))
+	})
 
-	if !parsedTime.Equal(expectedTime) {
-		t.Errorf("Parsed time doesn't match expected time. Expected: %v, Got: %v", expectedTime, parsedTime)
-	}
-}
+})
