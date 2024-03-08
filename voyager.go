@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -20,9 +19,8 @@ type Waypoint struct {
 	// Time representing the start of its range (e.g. start of the day for daily waypoints)
 	Time time.Time
 
-	// Unit of waypoint representing the duration of its time range
-	// TODO: make a enum
-	Unit string // year/month/day are supported for
+	// Unit of waypoint representing the duration unit (day|month|year)
+	Unit DateUnit
 
 	// Waypoints are inner children (subdirectories, files, etc)
 	Waypoints Waypoints
@@ -50,7 +48,9 @@ func (w *Waypoint) prepare(layout string) error {
 		log.Printf("Error parsing time from file %s: %v\n", w.Name, err)
 	} else {
 		w.Time = t
-		w.Unit = getTimeUnit(currentLayout)
+
+		layoutMeta := parseLayout(currentLayout)
+		w.Unit = layoutMeta.MinimalUnit
 
 		if len(layoutParts) > 0 {
 			innerLayout = strings.Join(layoutParts[1:], string(os.PathSeparator))
@@ -95,28 +95,4 @@ func NewVoyager(layout string) *Voyager {
 func (v *Voyager) Prepare(path string) error {
 	v.root = &Waypoint{Path: path}
 	return v.root.prepare(v.layout)
-}
-
-// getTimeUnit returns one of the units: year/month/day
-// by the given format
-// Note: it's a pretty hacky/weak function, but we're OK with it for now
-func getTimeUnit(layout string) string {
-	twoNotFollowedByZero := regexp.MustCompile(`2([^0]|$)`) // `2` is a day but `2006` is year
-	containsDay := strings.Contains(layout, "_2") || strings.Contains(layout, "02") || twoNotFollowedByZero.MatchString(layout)
-	if containsDay {
-		return "day"
-	}
-
-	oneNotFollowedByFive := regexp.MustCompile(`1([^5]|$)`) // `1` is month but `15` are hours
-	containsMonth := strings.Contains(layout, "01") || strings.Contains(layout, "Jan") || oneNotFollowedByFive.MatchString(layout)
-	if containsMonth {
-		return "month"
-	}
-
-	containsYear := strings.Contains(layout, "2006") || strings.Contains(layout, "06")
-	if containsYear {
-		return "year"
-	}
-
-	return "unknown"
 }
