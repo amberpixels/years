@@ -96,3 +96,5 @@ func (v *Voyager) Prepare(path string) error {
 	v.root = &Waypoint{Path: path}
 	return v.root.prepare(v.layout)
 }
+
+func (v *Voyager) WaypointsTree() *Waypoint { return v.root }
