@@ -1,6 +1,7 @@
 package years
 
 import (
+	"context"
 	"log"
 	"os"
 	"path/filepath"
@@ -28,9 +29,17 @@ type Waypoint struct {
 
 type Waypoints []*Waypoint
 
+// yearFromCtx/monthFromCtx are variables for ctx keys for storing
+// year & month information about parent when iterating through calendar directory
+// It's OK for a temporary solution
+var (
+	yearFromCtx  = "year"
+	monthFromCtx = "month"
+)
+
 // prepare builds the waypoints tree
 // layout is date layout e.g. "2006/Jan/02.txt", "2006/01-Jan/2006-01-02.txt", etc
-func (w *Waypoint) prepare(layout string) error {
+func (w *Waypoint) prepare(ctx context.Context, layout string) error {
 	stat, err := os.Stat(w.Path)
 	if err != nil {
 		return err
@@ -42,15 +51,40 @@ func (w *Waypoint) prepare(layout string) error {
 	// innerLayout is layout of inner objects (in case current is a directory)
 	var currentLayout, innerLayout = layoutParts[0], layout
 
+	// Parsing of current file's layout lets us know if we miss some parent date information
+	// e.g. currentLayout is "01" (only month), then we miss parent's year
+	//      or currentLayout is "02.txt" (only the day) then we miss both month and parent
+	layoutMeta := parseLayout(currentLayout)
+	var yearIsMissing, monthIsMissing bool = true, true
+	for _, unitInLayout := range layoutMeta.Units {
+		if unitInLayout == Year {
+			yearIsMissing = false
+		}
+		if unitInLayout == Month {
+			monthIsMissing = false
+		}
+	}
+
 	w.Name = stat.Name()
 	t, err := time.Parse(currentLayout, stat.Name())
 	if err != nil { // todo: check if current step has to be a valid date
 		log.Printf("Error parsing time from file %s: %v\n", w.Name, err)
 	} else {
 		w.Time = t
-
-		layoutMeta := parseLayout(currentLayout)
 		w.Unit = layoutMeta.MinimalUnit
+
+		// TODO: reconsider. It's a weak solution for now
+		if w.Unit < Year {
+			if yearIsMissing {
+				yearsFromParent := ctx.Value(yearFromCtx).(int)
+				w.Time = w.Time.AddDate(yearsFromParent, 0, 0)
+			}
+		}
+		if w.Unit < Month {
+			if monthIsMissing && ctx.Value(monthFromCtx) != nil {
+				w.Time = w.Time.AddDate(0, ctx.Value(monthFromCtx).(int), 0)
+			}
+		}
 
 		if len(layoutParts) > 0 {
 			innerLayout = strings.Join(layoutParts[1:], string(os.PathSeparator))
@@ -70,7 +104,16 @@ func (w *Waypoint) prepare(layout string) error {
 
 	for _, innerPath := range innerPaths {
 		child := &Waypoint{Path: innerPath}
-		if err := child.prepare(innerLayout); err != nil {
+
+		childCtx := ctx
+		if w.Unit <= Year {
+			childCtx = context.WithValue(childCtx, yearFromCtx, w.Time.Year())
+		}
+		if w.Unit <= Month {
+			childCtx = context.WithValue(childCtx, monthFromCtx, int(w.Time.Month()))
+		}
+
+		if err := child.prepare(childCtx, innerLayout); err != nil {
 			log.Println("child failed: %w", err)
 			continue
 		}
@@ -113,7 +156,7 @@ func NewVoyager(layout string) *Voyager {
 
 func (v *Voyager) Prepare(path string) error {
 	v.root = &Waypoint{Path: path}
-	return v.root.prepare(v.layout)
+	return v.root.prepare(context.Background(), v.layout)
 }
 
 func (v *Voyager) WaypointsTree() *Waypoint { return v.root }

@@ -46,7 +46,7 @@ var _ = Describe("Voyager", func() {
 		Expect(wJan.Unit).To(Equal(years.Month))
 		Expect(wJan.Time).To(And(
 			be_time.Month(time.January),
-			//be_time.Year(2024), // TODO when fixed
+			be_time.Year(2024),
 		))
 
 		Expect(wJan.Waypoints).To(HaveLen(0))
@@ -57,7 +57,7 @@ var _ = Describe("Voyager", func() {
 		Expect(wFeb.Unit).To(Equal(years.Month))
 		Expect(wFeb.Time).To(And(
 			be_time.Month(time.February),
-			//be_time.Year(2024), // TODO when fixed
+			be_time.Year(2024),
 		))
 		Expect(wFeb.Waypoints).To(HaveLen(1))
 
@@ -67,7 +67,7 @@ var _ = Describe("Voyager", func() {
 		Expect(wMarch.Unit).To(Equal(years.Month))
 		Expect(wMarch.Time).To(And(
 			be_time.Month(time.March),
-			//be_time.Year(2024), // TODO when fixed
+			be_time.Year(2024),
 		))
 
 		Expect(wMarch.Waypoints).To(HaveLen(2))
