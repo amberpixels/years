@@ -74,7 +74,26 @@ func (w *Waypoint) prepare(layout string) error {
 			log.Println("child failed: %w", err)
 			continue
 		}
-		w.Waypoints = append(w.Waypoints, child)
+		// Inserting child into the list of waypoints, but respecting the order
+		// To achieve this, we use simple append first time for first child
+		// And then we insert on the `index` position first time it met time earlier than new child
+		// Note: it's not the most optimal solution for inserting at position `index`
+		//       In future this is a place to be optimized
+		var inserted bool
+		for index, existedChild := range w.Waypoints {
+			if existedChild.Time.Before(child.Time) {
+				continue
+			}
+			w.Waypoints = append(w.Waypoints[:index+1], w.Waypoints[index:]...)
+			w.Waypoints[index] = child
+			inserted = true
+			break
+		}
+
+		// if not inserted, then it's the newest, so insert the last
+		if !inserted {
+			w.Waypoints = append(w.Waypoints, child)
+		}
 	}
 
 	return nil

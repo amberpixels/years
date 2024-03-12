@@ -38,18 +38,9 @@ var _ = Describe("Voyager", func() {
 		Expect(wYear2024.Time).To(be_time.Year(2024))
 		Expect(wYear2024.Waypoints).To(HaveLen(3))
 
-		// Months waypoints (alphabetic order for now is OK):
-		wFeb := wYear2024.Waypoints[0]
-		Expect(wFeb.Path).To(Equal(path + "/2024/Feb"))
-		Expect(wFeb.Name).To(Equal("Feb"))
-		Expect(wFeb.Unit).To(Equal(years.Month))
-		Expect(wFeb.Time).To(And(
-			be_time.Month(time.February),
-			//be_time.Year(2024), // TODO when fixed
-		))
-		Expect(wFeb.Waypoints).To(HaveLen(1))
+		// Months waypoints (Date ordered):
 
-		wJan := wYear2024.Waypoints[1]
+		wJan := wYear2024.Waypoints[0]
 		Expect(wJan.Path).To(Equal(path + "/2024/Jan"))
 		Expect(wJan.Name).To(Equal("Jan"))
 		Expect(wJan.Unit).To(Equal(years.Month))
@@ -59,6 +50,16 @@ var _ = Describe("Voyager", func() {
 		))
 
 		Expect(wJan.Waypoints).To(HaveLen(0))
+
+		wFeb := wYear2024.Waypoints[1]
+		Expect(wFeb.Path).To(Equal(path + "/2024/Feb"))
+		Expect(wFeb.Name).To(Equal("Feb"))
+		Expect(wFeb.Unit).To(Equal(years.Month))
+		Expect(wFeb.Time).To(And(
+			be_time.Month(time.February),
+			//be_time.Year(2024), // TODO when fixed
+		))
+		Expect(wFeb.Waypoints).To(HaveLen(1))
 
 		wMarch := wYear2024.Waypoints[2]
 		Expect(wMarch.Path).To(Equal(path + "/2024/Mar"))
