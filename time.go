@@ -17,6 +17,13 @@ func New(v *time.Time) *Time {
 	return &Time{v}
 }
 
+// TruncateToDay overrides hour, minute, second, nanosecond to zero
+func (t *Time) TruncateToDay() *Time {
+	truncated := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	*(t.Time) = truncated
+	return t
+}
+
 // SetYear overrides year of the time
 func (t *Time) SetYear(v int) *Time {
 	noYear := time.Date(0, t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())

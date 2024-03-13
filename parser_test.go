@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+type StaticClock struct{}
+
+func (c *StaticClock) Now() time.Time {
+	return time.Date(2024, time.March, 01, 14, 30, 59, 0, time.UTC)
+}
+
 var _ = Describe("Parser", func() {
 	Context("Default parser", func() {
 		It("should parse Unix timestamp", func() {
@@ -29,6 +35,26 @@ var _ = Describe("Parser", func() {
 			parsedTime, err := years.DefaultParser().ParseTime(timeStr)
 			Expect(err).Should(Succeed())
 			Expect(parsedTime).To(Equal(expectedTime))
+		})
+
+		It("should parse today/yesterday/tomorrow alias", func() {
+			parser := years.NewParser(
+				years.WithCustomClock(&StaticClock{}),
+				years.AcceptAliases(),
+				years.AcceptUnix(),
+			)
+
+			today, err := parser.ParseTime("today")
+			Expect(err).Should(Succeed())
+			Expect(today.String()).To(Equal(`2024-03-01 00:00:00 +0000 UTC`))
+
+			yesterday, err := parser.ParseTime("yesterday")
+			Expect(err).Should(Succeed())
+			Expect(yesterday.String()).To(Equal(`2024-02-29 00:00:00 +0000 UTC`))
+
+			tomorrow, err := parser.ParseTime("tomorrow")
+			Expect(err).Should(Succeed())
+			Expect(tomorrow.String()).To(Equal(`2024-03-02 00:00:00 +0000 UTC`))
 		})
 	})
 })

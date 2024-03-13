@@ -9,45 +9,61 @@ import (
 type ParserOption func(*Parser)
 
 type Parser struct {
-	layouts         []string
 	acceptUnix      bool
 	acceptUnixMilli bool
+	acceptAliases   bool
+
+	clock   Clock
+	layouts []string
+
+	aliases map[string]func(time.Time) time.Time
 }
 
 func WithLayouts(layouts ...string) ParserOption {
-	return func(p *Parser) {
-		p.layouts = layouts
-	}
+	return func(p *Parser) { p.layouts = layouts }
 }
 
 func AcceptUnix() ParserOption {
+	return func(p *Parser) { p.acceptUnix = true }
+}
+
+func AcceptAliases() ParserOption {
+	return func(p *Parser) { p.acceptAliases = true }
+}
+
+func WithCustomAliases(customAliases map[string]func(time.Time) time.Time) ParserOption {
 	return func(p *Parser) {
-		p.acceptUnix = true
+		for k, v := range customAliases {
+			p.aliases[k] = v
+		}
 	}
 }
 
 func AcceptUnixMilli() ParserOption {
-	return func(p *Parser) {
-		p.acceptUnixMilli = true
-	}
+	return func(p *Parser) { p.acceptUnixMilli = true }
+}
+
+func WithCustomClock(c Clock) ParserOption {
+	return func(p *Parser) { p.clock = c }
 }
 
 // defaultOptions are applied to the
 var defaultOptions = []ParserOption{
 	AcceptUnix(),
+	AcceptAliases(),
 }
 
 func SetDefaults(opts ...ParserOption) { defaultOptions = opts }
 func GetDefaults() []ParserOption      { return defaultOptions }
 
 func NewParser(options ...ParserOption) *Parser {
-	p := &Parser{}
+	p := &Parser{
+		clock:   &stdClock{},
+		aliases: builtinTimeAliases,
+	}
 
-	// Empty parser can parse only UNIX timestamps
 	if len(options) == 0 {
-		options = []ParserOption{
-			AcceptUnix(),
-		}
+		options = defaultOptions
 	}
 
 	for _, opt := range options {
@@ -77,6 +93,14 @@ func (p *Parser) ParseTime(value string) (time.Time, error) {
 	} else if p.acceptUnix {
 		if unixSec, err := strconv.ParseInt(value, 10, 64); err == nil {
 			return time.Unix(unixSec, 0), nil
+		}
+	}
+
+	if p.acceptAliases {
+		for alias, aliasCb := range p.aliases {
+			if value == alias {
+				return aliasCb(p.clock.Now()), nil
+			}
 		}
 	}
 
