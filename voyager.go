@@ -76,13 +76,16 @@ func (w *Waypoint) prepare(ctx context.Context, layout string) error {
 		// TODO: reconsider. It's a weak solution for now
 		if w.Unit < Year {
 			if yearIsMissing {
-				yearsFromParent := ctx.Value(yearFromCtx).(int)
-				w.Time = w.Time.AddDate(yearsFromParent, 0, 0)
+				if yearsFromParent, ok := ctx.Value(yearFromCtx).(int); ok {
+					New(&w.Time).SetYear(yearsFromParent)
+				}
 			}
 		}
 		if w.Unit < Month {
-			if monthIsMissing && ctx.Value(monthFromCtx) != nil {
-				w.Time = w.Time.AddDate(0, ctx.Value(monthFromCtx).(int), 0)
+			if monthIsMissing {
+				if monthFromParent, ok := ctx.Value(monthFromCtx).(time.Month); ok {
+					New(&w.Time).SetMonth(monthFromParent)
+				}
 			}
 		}
 
@@ -110,7 +113,7 @@ func (w *Waypoint) prepare(ctx context.Context, layout string) error {
 			childCtx = context.WithValue(childCtx, yearFromCtx, w.Time.Year())
 		}
 		if w.Unit <= Month {
-			childCtx = context.WithValue(childCtx, monthFromCtx, int(w.Time.Month()))
+			childCtx = context.WithValue(childCtx, monthFromCtx, w.Time.Month())
 		}
 
 		if err := child.prepare(childCtx, innerLayout); err != nil {
