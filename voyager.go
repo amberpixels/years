@@ -29,6 +29,9 @@ type Waypoint struct {
 	// IsDir is a boolean flag stating for directory waypoints
 	IsDir bool
 
+	// IsRoot is a boolean flag stating for a root waypoint
+	IsRoot bool
+
 	// Waypoints are inner children (subdirectories, files, etc)
 	Waypoints Waypoints
 }
@@ -76,32 +79,34 @@ func (w *Waypoint) prepare(ctx context.Context, layout string) error {
 	}
 
 	w.Name = stat.Name()
-	w.Layout = currentLayout
-	t, err := time.Parse(currentLayout, stat.Name())
-	if err != nil { // todo: check if current step has to be a valid date
-		log.Printf("Error parsing time from file %s: %v\n", w.Name, err)
-	} else {
-		w.Time = t
-		w.Unit = layoutMeta.MinimalUnit
+	if !w.IsRoot {
+		t, err := time.Parse(currentLayout, stat.Name())
+		if err != nil { // todo: check if current step has to be a valid date
+			log.Printf("Error parsing time from file %s: %v\n", w.Name, err)
+		} else {
+			w.Layout = currentLayout
+			w.Time = t
+			w.Unit = layoutMeta.MinimalUnit
 
-		// TODO: reconsider. It's a weak solution for now
-		if w.Unit < Year {
-			if yearIsMissing {
-				if yearsFromParent, ok := ctx.Value(yearFromCtx).(int); ok {
-					Wrap(&w.Time).SetYear(yearsFromParent)
+			// TODO: reconsider. It's a weak solution for now
+			if w.Unit < Year {
+				if yearIsMissing {
+					if yearsFromParent, ok := ctx.Value(yearFromCtx).(int); ok {
+						Wrap(&w.Time).SetYear(yearsFromParent)
+					}
 				}
 			}
-		}
-		if w.Unit < Month {
-			if monthIsMissing {
-				if monthFromParent, ok := ctx.Value(monthFromCtx).(time.Month); ok {
-					Wrap(&w.Time).SetMonth(monthFromParent)
+			if w.Unit < Month {
+				if monthIsMissing {
+					if monthFromParent, ok := ctx.Value(monthFromCtx).(time.Month); ok {
+						Wrap(&w.Time).SetMonth(monthFromParent)
+					}
 				}
 			}
-		}
 
-		if len(layoutParts) > 0 {
-			innerLayout = strings.Join(layoutParts[1:], string(os.PathSeparator))
+			if len(layoutParts) > 0 {
+				innerLayout = strings.Join(layoutParts[1:], string(os.PathSeparator))
+			}
 		}
 	}
 
@@ -169,7 +174,7 @@ func NewVoyager(layout string) *Voyager {
 }
 
 func (v *Voyager) Prepare(path string) error {
-	v.root = &Waypoint{Path: path}
+	v.root = &Waypoint{Path: path, IsRoot: true}
 	return v.root.prepare(context.Background(), v.layout)
 }
 
