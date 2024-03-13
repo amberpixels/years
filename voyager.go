@@ -17,6 +17,9 @@ type Waypoint struct {
 	// Name or the base of the path
 	Name string
 
+	// Layout on which time was parsed
+	Layout string
+
 	// Time representing the start of its range (e.g. start of the day for daily waypoints)
 	Time time.Time
 
@@ -73,6 +76,7 @@ func (w *Waypoint) prepare(ctx context.Context, layout string) error {
 	}
 
 	w.Name = stat.Name()
+	w.Layout = currentLayout
 	t, err := time.Parse(currentLayout, stat.Name())
 	if err != nil { // todo: check if current step has to be a valid date
 		log.Printf("Error parsing time from file %s: %v\n", w.Name, err)
