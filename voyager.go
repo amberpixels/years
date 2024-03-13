@@ -23,6 +23,9 @@ type Waypoint struct {
 	// Unit of waypoint representing the duration unit (day|month|year)
 	Unit DateUnit
 
+	// IsDir is a boolean flag stating for directory waypoints
+	IsDir bool
+
 	// Waypoints are inner children (subdirectories, files, etc)
 	Waypoints Waypoints
 }
@@ -43,6 +46,10 @@ func (w *Waypoint) prepare(ctx context.Context, layout string) error {
 	stat, err := os.Stat(w.Path)
 	if err != nil {
 		return err
+	}
+
+	if stat.IsDir() {
+		w.IsDir = true
 	}
 
 	layoutParts := strings.Split(layout, string(os.PathSeparator))
@@ -163,3 +170,130 @@ func (v *Voyager) Prepare(path string) error {
 }
 
 func (v *Voyager) WaypointsTree() *Waypoint { return v.root }
+
+// Traversing means walking through voyager's prepared tree
+
+// TraverseDirection TODO nicer enum-ish
+type TraverseDirection string
+
+const (
+	TraverseDirectionPast   TraverseDirection = "past"
+	TraverseDirectionFuture TraverseDirection = "future"
+)
+
+// TraverseNodes TODO nicer enum-ish
+type TraverseNodes string
+
+const (
+	TraverseFilesOnly TraverseNodes = "files_only"
+	TraverseDirsOnly  TraverseNodes = "dirs_only"
+	TraverseAllNodes  TraverseNodes = "all"
+)
+
+type traverseConfig struct {
+	direction               TraverseDirection
+	nodesMode               TraverseNodes
+	includeNonCalendarNodes bool
+}
+
+// defaultTraverseConfig is Future->Past + all type of nodes
+func defaultTraverseConfig() traverseConfig {
+	return traverseConfig{
+		direction: TraverseDirectionPast,
+		nodesMode: TraverseAllNodes,
+	}
+}
+
+// isTraversable checks if a given waypoint is traversable regard to config
+func (config *traverseConfig) isTraversable(waypoint *Waypoint) bool {
+	if waypoint.Time.IsZero() && !config.includeNonCalendarNodes {
+		return false
+	}
+
+	if config.nodesMode == TraverseAllNodes {
+		return true
+	}
+
+	okFileOnly := config.nodesMode == TraverseFilesOnly && !waypoint.IsDir
+	okDirOnly := config.nodesMode == TraverseDirsOnly && waypoint.IsDir
+	return okFileOnly || okDirOnly
+}
+
+// TraverseOption defines functional options for the Traverse function
+type TraverseOption func(*traverseConfig)
+
+// O_PAST returns a TraverseOption for traversing in Past direction
+func O_PAST() TraverseOption {
+	return func(o *traverseConfig) { o.direction = TraverseDirectionPast }
+}
+
+// O_FUTURE returns a TraverseOption for traversing in Future direction
+func O_FUTURE() TraverseOption {
+	return func(o *traverseConfig) { o.direction = TraverseDirectionFuture }
+}
+
+// O_FILES_ONLY returns a TraverseOption for traversing only file nodes
+func O_FILES_ONLY() TraverseOption {
+	return func(o *traverseConfig) { o.nodesMode = TraverseFilesOnly }
+}
+
+// O_DIRS_ONLY returns a TraverseOption for traversing only dir nodes
+func O_DIRS_ONLY() TraverseOption {
+	return func(o *traverseConfig) { o.nodesMode = TraverseDirsOnly }
+}
+
+// O_ALL returns a TraverseOption for traversing all nodes
+func O_ALL() TraverseOption {
+	return func(o *traverseConfig) { o.nodesMode = TraverseAllNodes }
+}
+
+// O_NON_CALENDAR returns a TraverseOption for including non calendar nodes
+func O_NON_CALENDAR() TraverseOption {
+	return func(o *traverseConfig) { o.includeNonCalendarNodes = true }
+}
+
+// Traverse traverses the built voyager tree in the given direction
+func (v *Voyager) Traverse(cb func(w *Waypoint), opts ...TraverseOption) {
+	config := defaultTraverseConfig()
+	for _, opt := range opts {
+		opt(&config)
+	}
+
+	switch config.direction {
+	case TraverseDirectionPast:
+		v.traversePast(v.root, cb, &config)
+	case TraverseDirectionFuture:
+		v.traverseFuture(v.root, cb, &config)
+	default:
+		panic("invalid traverse direction: " + config.direction)
+	}
+}
+
+func (v *Voyager) traversePast(waypoint *Waypoint, cb func(w *Waypoint), config *traverseConfig) {
+	if waypoint == nil {
+		return
+	}
+
+	for i := len(waypoint.Waypoints) - 1; i >= 0; i-- {
+		child := waypoint.Waypoints[i]
+		v.traversePast(child, cb, config)
+	}
+
+	if config.isTraversable(waypoint) {
+		cb(waypoint)
+	}
+}
+
+func (v *Voyager) traverseFuture(waypoint *Waypoint, cb func(w *Waypoint), config *traverseConfig) {
+	if waypoint == nil {
+		return
+	}
+
+	if config.isTraversable(waypoint) {
+		cb(waypoint)
+	}
+
+	for _, child := range waypoint.Waypoints {
+		v.traverseFuture(child, cb, config)
+	}
+}
