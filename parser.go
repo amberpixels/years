@@ -59,7 +59,7 @@ func GetDefaults() []ParserOption      { return defaultOptions }
 func NewParser(options ...ParserOption) *Parser {
 	p := &Parser{
 		clock:   &stdClock{},
-		aliases: builtinTimeAliases,
+		aliases: coreAliases,
 	}
 
 	if len(options) == 0 {

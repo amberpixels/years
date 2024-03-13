@@ -88,14 +88,14 @@ func (w *Waypoint) prepare(ctx context.Context, layout string) error {
 		if w.Unit < Year {
 			if yearIsMissing {
 				if yearsFromParent, ok := ctx.Value(yearFromCtx).(int); ok {
-					New(&w.Time).SetYear(yearsFromParent)
+					Wrap(&w.Time).SetYear(yearsFromParent)
 				}
 			}
 		}
 		if w.Unit < Month {
 			if monthIsMissing {
 				if monthFromParent, ok := ctx.Value(monthFromCtx).(time.Month); ok {
-					New(&w.Time).SetMonth(monthFromParent)
+					Wrap(&w.Time).SetMonth(monthFromParent)
 				}
 			}
 		}
