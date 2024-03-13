@@ -6,6 +6,10 @@ type Clock interface {
 	Now() time.Time
 }
 
-type stdClock struct{}
+type StdClock struct{}
 
-func (c *stdClock) Now() time.Time { return time.Now() }
+func (c *StdClock) Now() time.Time { return time.Now() }
+
+var stdClock Clock = &StdClock{}
+
+func SetStdClock(c Clock) { stdClock = c }

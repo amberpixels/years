@@ -206,6 +206,17 @@ var _ = Describe("Voyager", func() {
 				Expect(navigated).NotTo(BeNil())
 				Expect(navigated.Name).To(Equal("2024-03-06.txt"))
 			})
+
+			It("should navigate to today", func() {
+				mockClock := &StaticClock{
+					now: time.Date(2024, time.March, 05, 14, 30, 59, 0, time.UTC),
+				}
+
+				years.SetStdClock(mockClock)
+				navigated := v.Navigate("today")
+				Expect(navigated).NotTo(BeNil())
+				Expect(navigated.Name).To(Equal("2024-03-05.txt"))
+			})
 		})
 	})
 })
