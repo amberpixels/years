@@ -110,92 +110,102 @@ var _ = Describe("Voyager", func() {
 			Expect(wMarch06.Waypoints).To(BeEmpty())
 		})
 
-		It("should traverse files Past->Future", func() {
-			paths := make([]string, 0)
-			v.Traverse(func(w *years.Waypoint) {
-				paths = append(paths, w.Path)
-			}, years.O_FUTURE(), years.O_FILES_ONLY())
+		Context("traversing", func() {
+			It("should traverse files Past->Future", func() {
+				paths := make([]string, 0)
+				v.Traverse(func(w *years.Waypoint) {
+					paths = append(paths, w.Path)
+				}, years.O_FUTURE(), years.O_FILES_ONLY())
 
-			Expect(paths).To(Equal([]string{
-				"internal/testdata/calendar/2024/Feb/2024-02-01.txt",
-				"internal/testdata/calendar/2024/Mar/2024-03-05.txt",
-				"internal/testdata/calendar/2024/Mar/2024-03-06.txt",
-			}))
+				Expect(paths).To(Equal([]string{
+					"internal/testdata/calendar/2024/Feb/2024-02-01.txt",
+					"internal/testdata/calendar/2024/Mar/2024-03-05.txt",
+					"internal/testdata/calendar/2024/Mar/2024-03-06.txt",
+				}))
+			})
+
+			It("should traverse files Future->Past", func() {
+				paths := make([]string, 0)
+				v.Traverse(func(w *years.Waypoint) {
+					paths = append(paths, w.Path)
+				}, years.O_PAST(), years.O_FILES_ONLY())
+
+				Expect(paths).To(Equal([]string{
+					"internal/testdata/calendar/2024/Mar/2024-03-06.txt",
+					"internal/testdata/calendar/2024/Mar/2024-03-05.txt",
+					"internal/testdata/calendar/2024/Feb/2024-02-01.txt",
+				}))
+			})
+
+			It("should traverse directories Past->Future", func() {
+				paths := make([]string, 0)
+				v.Traverse(func(w *years.Waypoint) {
+					paths = append(paths, w.Path)
+				}, years.O_FUTURE(), years.O_DIRS_ONLY())
+
+				Expect(paths).To(Equal([]string{
+					"internal/testdata/calendar/2024",
+					"internal/testdata/calendar/2024/Jan",
+					"internal/testdata/calendar/2024/Feb",
+					"internal/testdata/calendar/2024/Mar",
+				}))
+			})
+
+			It("should traverse directories Future->Past", func() {
+				paths := make([]string, 0)
+				v.Traverse(func(w *years.Waypoint) {
+					paths = append(paths, w.Path)
+				}, years.O_PAST(), years.O_DIRS_ONLY())
+
+				Expect(paths).To(Equal([]string{
+					"internal/testdata/calendar/2024/Mar",
+					"internal/testdata/calendar/2024/Feb",
+					"internal/testdata/calendar/2024/Jan",
+					"internal/testdata/calendar/2024",
+				}))
+			})
+
+			It("should traverse all nodes Future->Past", func() {
+				paths := make([]string, 0)
+				v.Traverse(func(w *years.Waypoint) {
+					paths = append(paths, w.Path)
+				}, years.O_PAST(), years.O_ALL())
+
+				Expect(paths).To(Equal([]string{
+					"internal/testdata/calendar/2024/Mar/2024-03-06.txt",
+					"internal/testdata/calendar/2024/Mar/2024-03-05.txt",
+					"internal/testdata/calendar/2024/Mar",
+					"internal/testdata/calendar/2024/Feb/2024-02-01.txt",
+					"internal/testdata/calendar/2024/Feb",
+					"internal/testdata/calendar/2024/Jan",
+					"internal/testdata/calendar/2024",
+				}))
+			})
+
+			It("should traverse all nodes Past->Future", func() {
+				paths := make([]string, 0)
+				v.Traverse(func(w *years.Waypoint) {
+					paths = append(paths, w.Path)
+				}, years.O_FUTURE(), years.O_ALL())
+
+				Expect(paths).To(Equal([]string{
+					"internal/testdata/calendar/2024",
+					"internal/testdata/calendar/2024/Jan",
+					"internal/testdata/calendar/2024/Feb",
+					"internal/testdata/calendar/2024/Feb/2024-02-01.txt",
+					"internal/testdata/calendar/2024/Mar",
+					"internal/testdata/calendar/2024/Mar/2024-03-05.txt",
+					"internal/testdata/calendar/2024/Mar/2024-03-06.txt",
+				}))
+			})
 		})
 
-		It("should traverse files Future->Past", func() {
-			paths := make([]string, 0)
-			v.Traverse(func(w *years.Waypoint) {
-				paths = append(paths, w.Path)
-			}, years.O_PAST(), years.O_FILES_ONLY())
-
-			Expect(paths).To(Equal([]string{
-				"internal/testdata/calendar/2024/Mar/2024-03-06.txt",
-				"internal/testdata/calendar/2024/Mar/2024-03-05.txt",
-				"internal/testdata/calendar/2024/Feb/2024-02-01.txt",
-			}))
-		})
-
-		It("should traverse directories Past->Future", func() {
-			paths := make([]string, 0)
-			v.Traverse(func(w *years.Waypoint) {
-				paths = append(paths, w.Path)
-			}, years.O_FUTURE(), years.O_DIRS_ONLY())
-
-			Expect(paths).To(Equal([]string{
-				"internal/testdata/calendar/2024",
-				"internal/testdata/calendar/2024/Jan",
-				"internal/testdata/calendar/2024/Feb",
-				"internal/testdata/calendar/2024/Mar",
-			}))
-		})
-
-		It("should traverse directories Future->Past", func() {
-			paths := make([]string, 0)
-			v.Traverse(func(w *years.Waypoint) {
-				paths = append(paths, w.Path)
-			}, years.O_PAST(), years.O_DIRS_ONLY())
-
-			Expect(paths).To(Equal([]string{
-				"internal/testdata/calendar/2024/Mar",
-				"internal/testdata/calendar/2024/Feb",
-				"internal/testdata/calendar/2024/Jan",
-				"internal/testdata/calendar/2024",
-			}))
-		})
-
-		It("should traverse all nodes Future->Past", func() {
-			paths := make([]string, 0)
-			v.Traverse(func(w *years.Waypoint) {
-				paths = append(paths, w.Path)
-			}, years.O_PAST(), years.O_ALL())
-
-			Expect(paths).To(Equal([]string{
-				"internal/testdata/calendar/2024/Mar/2024-03-06.txt",
-				"internal/testdata/calendar/2024/Mar/2024-03-05.txt",
-				"internal/testdata/calendar/2024/Mar",
-				"internal/testdata/calendar/2024/Feb/2024-02-01.txt",
-				"internal/testdata/calendar/2024/Feb",
-				"internal/testdata/calendar/2024/Jan",
-				"internal/testdata/calendar/2024",
-			}))
-		})
-
-		It("should traverse all nodes Past->Future", func() {
-			paths := make([]string, 0)
-			v.Traverse(func(w *years.Waypoint) {
-				paths = append(paths, w.Path)
-			}, years.O_FUTURE(), years.O_ALL())
-
-			Expect(paths).To(Equal([]string{
-				"internal/testdata/calendar/2024",
-				"internal/testdata/calendar/2024/Jan",
-				"internal/testdata/calendar/2024/Feb",
-				"internal/testdata/calendar/2024/Feb/2024-02-01.txt",
-				"internal/testdata/calendar/2024/Mar",
-				"internal/testdata/calendar/2024/Mar/2024-03-05.txt",
-				"internal/testdata/calendar/2024/Mar/2024-03-06.txt",
-			}))
+		Context("navigating", func() {
+			It("should navigate to a specific date", func() {
+				navigated := v.Navigate("2024-03-06")
+				Expect(navigated).NotTo(BeNil())
+				Expect(navigated.Name).To(Equal("2024-03-06.txt"))
+			})
 		})
 	})
 })

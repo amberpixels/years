@@ -297,3 +297,21 @@ func (v *Voyager) traverseFuture(waypoint *Waypoint, cb func(w *Waypoint), confi
 		v.traverseFuture(child, cb, config)
 	}
 }
+
+func (v *Voyager) Navigate(to string) *Waypoint {
+	// todo: supported layouts should be known from voyager
+	navigateTo, _ := NewParser(WithLayouts("2006-01-02")).ParseTime(to)
+	var found *Waypoint
+	v.Traverse(func(w *Waypoint) {
+		if found != nil {
+			return
+		}
+
+		if w.Time.Equal(navigateTo) {
+			found = w
+			return
+		}
+	})
+
+	return found
+}
