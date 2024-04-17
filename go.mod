@@ -4,8 +4,8 @@ go 1.22
 
 require (
 	github.com/expectto/be v0.2.1-0.20240308052604-0831ff6811df // main
-	github.com/onsi/ginkgo/v2 v2.16.0
-	github.com/onsi/gomega v1.31.1
+	github.com/onsi/ginkgo/v2 v2.17.1 // latest
+	github.com/onsi/gomega v1.32.0 // latest
 )
 
 require (
