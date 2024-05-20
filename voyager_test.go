@@ -12,7 +12,7 @@ import (
 var _ = Describe("Voyager", func() {
 	Context("Calendar 2006/Jan/2006-01-02.txt", func() {
 		const TestCalendarLayout = "2006/Jan/2006-01-02.txt"
-		var CalendarPath = filepath.Join(TestDataPath, "calendar")
+		var CalendarPath = filepath.Join(TestDataPath, "calendar1")
 
 		var v *years.Voyager
 
@@ -25,9 +25,9 @@ var _ = Describe("Voyager", func() {
 			wt := v.WaypointsTree()
 			Expect(wt).NotTo(BeNil())
 
-			// Root (calendar) folder has no time attached yet
+			// Root (calendar1) folder has no time attached yet
 			Expect(wt.Path).To(Equal(CalendarPath))
-			Expect(wt.Name).To(Equal("calendar"))
+			Expect(wt.Name).To(Equal("calendar1"))
 			Expect(wt.Unit).To(Equal(years.UnitUndefined))
 			Expect(wt.Time).To(BeZero())
 			Expect(wt.Waypoints).To(HaveLen(1))
@@ -118,9 +118,9 @@ var _ = Describe("Voyager", func() {
 				}, years.O_FUTURE(), years.O_FILES_ONLY())
 
 				Expect(paths).To(Equal([]string{
-					"internal/testdata/calendar/2024/Feb/2024-02-01.txt",
-					"internal/testdata/calendar/2024/Mar/2024-03-05.txt",
-					"internal/testdata/calendar/2024/Mar/2024-03-06.txt",
+					"internal/testdata/calendar1/2024/Feb/2024-02-01.txt",
+					"internal/testdata/calendar1/2024/Mar/2024-03-05.txt",
+					"internal/testdata/calendar1/2024/Mar/2024-03-06.txt",
 				}))
 			})
 
@@ -131,9 +131,9 @@ var _ = Describe("Voyager", func() {
 				}, years.O_PAST(), years.O_FILES_ONLY())
 
 				Expect(paths).To(Equal([]string{
-					"internal/testdata/calendar/2024/Mar/2024-03-06.txt",
-					"internal/testdata/calendar/2024/Mar/2024-03-05.txt",
-					"internal/testdata/calendar/2024/Feb/2024-02-01.txt",
+					"internal/testdata/calendar1/2024/Mar/2024-03-06.txt",
+					"internal/testdata/calendar1/2024/Mar/2024-03-05.txt",
+					"internal/testdata/calendar1/2024/Feb/2024-02-01.txt",
 				}))
 			})
 
@@ -144,10 +144,10 @@ var _ = Describe("Voyager", func() {
 				}, years.O_FUTURE(), years.O_DIRS_ONLY())
 
 				Expect(paths).To(Equal([]string{
-					"internal/testdata/calendar/2024",
-					"internal/testdata/calendar/2024/Jan",
-					"internal/testdata/calendar/2024/Feb",
-					"internal/testdata/calendar/2024/Mar",
+					"internal/testdata/calendar1/2024",
+					"internal/testdata/calendar1/2024/Jan",
+					"internal/testdata/calendar1/2024/Feb",
+					"internal/testdata/calendar1/2024/Mar",
 				}))
 			})
 
@@ -158,10 +158,10 @@ var _ = Describe("Voyager", func() {
 				}, years.O_PAST(), years.O_DIRS_ONLY())
 
 				Expect(paths).To(Equal([]string{
-					"internal/testdata/calendar/2024/Mar",
-					"internal/testdata/calendar/2024/Feb",
-					"internal/testdata/calendar/2024/Jan",
-					"internal/testdata/calendar/2024",
+					"internal/testdata/calendar1/2024/Mar",
+					"internal/testdata/calendar1/2024/Feb",
+					"internal/testdata/calendar1/2024/Jan",
+					"internal/testdata/calendar1/2024",
 				}))
 			})
 
@@ -172,13 +172,13 @@ var _ = Describe("Voyager", func() {
 				}, years.O_PAST(), years.O_ALL())
 
 				Expect(paths).To(Equal([]string{
-					"internal/testdata/calendar/2024/Mar/2024-03-06.txt",
-					"internal/testdata/calendar/2024/Mar/2024-03-05.txt",
-					"internal/testdata/calendar/2024/Mar",
-					"internal/testdata/calendar/2024/Feb/2024-02-01.txt",
-					"internal/testdata/calendar/2024/Feb",
-					"internal/testdata/calendar/2024/Jan",
-					"internal/testdata/calendar/2024",
+					"internal/testdata/calendar1/2024/Mar/2024-03-06.txt",
+					"internal/testdata/calendar1/2024/Mar/2024-03-05.txt",
+					"internal/testdata/calendar1/2024/Mar",
+					"internal/testdata/calendar1/2024/Feb/2024-02-01.txt",
+					"internal/testdata/calendar1/2024/Feb",
+					"internal/testdata/calendar1/2024/Jan",
+					"internal/testdata/calendar1/2024",
 				}))
 			})
 
@@ -189,13 +189,13 @@ var _ = Describe("Voyager", func() {
 				}, years.O_FUTURE(), years.O_ALL())
 
 				Expect(paths).To(Equal([]string{
-					"internal/testdata/calendar/2024",
-					"internal/testdata/calendar/2024/Jan",
-					"internal/testdata/calendar/2024/Feb",
-					"internal/testdata/calendar/2024/Feb/2024-02-01.txt",
-					"internal/testdata/calendar/2024/Mar",
-					"internal/testdata/calendar/2024/Mar/2024-03-05.txt",
-					"internal/testdata/calendar/2024/Mar/2024-03-06.txt",
+					"internal/testdata/calendar1/2024",
+					"internal/testdata/calendar1/2024/Jan",
+					"internal/testdata/calendar1/2024/Feb",
+					"internal/testdata/calendar1/2024/Feb/2024-02-01.txt",
+					"internal/testdata/calendar1/2024/Mar",
+					"internal/testdata/calendar1/2024/Mar/2024-03-05.txt",
+					"internal/testdata/calendar1/2024/Mar/2024-03-06.txt",
 				}))
 			})
 		})
