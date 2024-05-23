@@ -16,11 +16,11 @@ var _ = Describe("Voyager", func() {
 
 		var CalendarPath = filepath.Join(TestDataPath, "calendar1")
 
-		var wf *years.WaypointFile
+		var wf *years.TimeNamedWaypointFile
 		var v *years.Voyager
 		BeforeEach(func() {
 			var err error
-			wf, err = years.NewWaypointFile(ctx, CalendarPath)
+			wf, err = years.NewTimeNamedWaypointFile(ctx, CalendarPath)
 			Expect(err).To(Succeed())
 
 			v = years.NewVoyager(wf)
@@ -153,11 +153,11 @@ var _ = Describe("Voyager", func() {
 		// e.g. 2006/Jan/01-Mon.txt
 		var CalendarPath = filepath.Join(TestDataPath, "calendar2")
 
-		var wf *years.WaypointFile
+		var wf *years.TimeNamedWaypointFile
 		var v *years.Voyager
 		BeforeEach(func() {
 			var err error
-			wf, err = years.NewWaypointFile(ctx, CalendarPath)
+			wf, err = years.NewTimeNamedWaypointFile(ctx, CalendarPath)
 			Expect(err).To(Succeed())
 
 			v = years.NewVoyager(wf)

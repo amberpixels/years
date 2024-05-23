@@ -115,8 +115,6 @@ func (v *Voyager) Traverse(cb func(w Waypoint), opts ...TraverseOption) error {
 	default:
 		panic("invalid traverse direction: " + config.direction)
 	}
-
-	return nil
 }
 
 func (v *Voyager) traversePast(waypoint Waypoint, cb func(w Waypoint), config *traverseConfig) error {
@@ -124,10 +122,7 @@ func (v *Voyager) traversePast(waypoint Waypoint, cb func(w Waypoint), config *t
 		return nil
 	}
 
-	children, err := waypoint.Children()
-	if err != nil {
-		return fmt.Errorf("failed to get children: %w", err)
-	}
+	children := waypoint.Children()
 
 	for i := len(children) - 1; i >= 0; i-- {
 		child := children[i]
@@ -152,10 +147,7 @@ func (v *Voyager) traverseFuture(waypoint Waypoint, cb func(w Waypoint), config 
 		cb(waypoint)
 	}
 
-	children, err := waypoint.Children()
-	if err != nil {
-		return fmt.Errorf("failed to get children: %w", err)
-	}
+	children := waypoint.Children()
 
 	for _, child := range children {
 		if err := v.traverseFuture(child, cb, config); err != nil {

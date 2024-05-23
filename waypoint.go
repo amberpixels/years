@@ -17,5 +17,5 @@ type Waypoint interface {
 
 	// Children returns the children of the object if it's a container.
 	// E.g. for directories, it should return the list of files and directories inside.
-	Children() ([]Waypoint, error)
+	Children() []Waypoint
 }
