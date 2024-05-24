@@ -120,7 +120,8 @@ func NewTimeNamedWaypointFile(ctx context.Context, path string) (*TimeNamedWaypo
 		for _, innerPath := range innerPaths {
 			child, err := NewTimeNamedWaypointFile(withCtxWaypointFileParent(ctx, w), innerPath)
 			if err != nil {
-				log.Println("child failed: %w", err)
+				// TODO(nice-to-have): add configurable way to halt on child error, to log/omit errors, etc
+				log.Printf("child: NewTimeNamedWaypointFile(%s) failed: %s\n", innerPath, err)
 				continue
 			}
 

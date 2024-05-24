@@ -51,7 +51,8 @@ func NewWaypointFile(ctx context.Context, path string) (*WaypointFile, error) {
 		for _, innerPath := range innerPaths {
 			child, err := NewWaypointFile(ctx, innerPath)
 			if err != nil {
-				log.Println("child failed: %w", err)
+				// TODO(nice-to-have): add configurable way to halt on child error, to log/omit errors, etc
+				log.Printf("child: NewWaypointFile(%s) failed: %s\n", innerPath, err)
 				continue
 			}
 
