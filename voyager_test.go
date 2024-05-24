@@ -13,7 +13,7 @@ var _ = Describe("Voyager", func() {
 	Context("TimeNamedFileWaypoints", func() {
 		Context("Calendar1", func() {
 			const TestCalendarLayout = "2006/Jan/2006-01-02.txt"
-			ctx := years.WithCtxWaypointFileGlobalLayout(context.Background(), TestCalendarLayout)
+			ctx := context.Background()
 
 			var CalendarPath = filepath.Join(TestDataPath, "calendar1")
 
@@ -21,7 +21,7 @@ var _ = Describe("Voyager", func() {
 			var v *years.Voyager
 			BeforeEach(func() {
 				var err error
-				wf, err = years.NewTimeNamedWaypointFile(ctx, CalendarPath)
+				wf, err = years.NewTimeNamedWaypointFile(ctx, CalendarPath, TestCalendarLayout)
 				Expect(err).To(Succeed())
 
 				v = years.NewVoyager(wf)
@@ -147,7 +147,7 @@ var _ = Describe("Voyager", func() {
 
 		Context("Calendar2", func() {
 			const TestCalendarLayout = "2006/Jan/02 Mon.txt"
-			ctx := years.WithCtxWaypointFileGlobalLayout(context.Background(), TestCalendarLayout)
+			ctx := context.Background()
 
 			// Calendar2 is different in the manner of how final files are named.
 			// here, on Calendar2 final files are not sufficient for knowing the date (so they require parent information)
@@ -158,7 +158,7 @@ var _ = Describe("Voyager", func() {
 			var v *years.Voyager
 			BeforeEach(func() {
 				var err error
-				wf, err = years.NewTimeNamedWaypointFile(ctx, CalendarPath)
+				wf, err = years.NewTimeNamedWaypointFile(ctx, CalendarPath, TestCalendarLayout)
 				Expect(err).To(Succeed())
 
 				v = years.NewVoyager(wf)

@@ -17,11 +17,6 @@ type TimeNamedWaypointFile struct {
 	// Usually it's considered to be file/dir name + names of parents (if necessary)
 	timeInput string
 
-	// ownLayout is layout of the file/dir itself
-	// It can be partial as probably parent information is required for full layout
-	// e.g. "Jan" (not knowing the year here)
-	ownLayout string
-
 	// layout is a full layout (knowing required parent's layout information)
 	// e.g. "2006/Jan"
 	layout string
@@ -33,7 +28,6 @@ type TimeNamedWaypointFile struct {
 func (w *TimeNamedWaypointFile) setNonCalendar() {
 	w.layout = ""
 	w.timeInput = ""
-	w.ownLayout = ""
 	w.timeInput = ""
 	w.t = time.Time{}
 }
@@ -42,20 +36,7 @@ type TimeNamedWaypointFiles []*TimeNamedWaypointFile
 
 func (w *TimeNamedWaypointFile) Time() time.Time { return w.t }
 
-func WithCtxWaypointFileGlobalLayout(ctx context.Context, v string) context.Context {
-	return context.WithValue(ctx, "global_layout", v)
-}
-
-func globalLayoutFromCtx(ctx context.Context) string {
-	return ctx.Value("global_layout").(string)
-}
-
-func NewTimeNamedWaypointFile(ctx context.Context, path string, parentArg ...*TimeNamedWaypointFile) (*TimeNamedWaypointFile, error) {
-	globalLayout := globalLayoutFromCtx(ctx)
-	if globalLayout == "" {
-		panic("global_layout is required")
-	}
-
+func NewTimeNamedWaypointFile(ctx context.Context, path string, fullLayout string, parentArg ...*TimeNamedWaypointFile) (*TimeNamedWaypointFile, error) {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -63,44 +44,39 @@ func NewTimeNamedWaypointFile(ctx context.Context, path string, parentArg ...*Ti
 	w0 := &WaypointFile{path: path, fileInfo: stat, t: stat.ModTime()}
 	w := &TimeNamedWaypointFile{WaypointFile: w0}
 
-	var ownLayout, layout string
-	globalLayoutParts := strings.Split(globalLayout, string(os.PathSeparator))
+	fullLayoutParts := strings.Split(fullLayout, string(os.PathSeparator))
+	layout := fullLayoutParts[0] // by default layout would be first part of layout parts
 
-	var parent *TimeNamedWaypointFile
-	if len(parentArg) > 0 {
-		parent = parentArg[0]
-	}
+	w.timeInput = w.fileInfo.Name()
 
-	if parent != nil {
-		ownLayout = strings.TrimPrefix(globalLayout, parent.layout+"/")
+	if len(parentArg) > 0 && parentArg[0] != nil {
+		parent := parentArg[0]
+		ownLayout := strings.TrimPrefix(fullLayout, parent.layout+"/")
+
 		if w.fileInfo.IsDir() {
 			ownLayout = strings.Split(ownLayout, string(os.PathSeparator))[0]
 		}
+
 		layout = parent.layout + string(os.PathSeparator) + ownLayout
-	} else {
-		ownLayout = globalLayoutParts[0]
-		layout = ownLayout
+
+		if parent.timeInput != "" {
+			w.timeInput = parent.timeInput + string(os.PathSeparator) + w.timeInput
+		}
 	}
 
 	layout = strings.TrimPrefix(layout, string(os.PathSeparator))
-	ownLayout = strings.TrimPrefix(ownLayout, string(os.PathSeparator))
-
-	w.timeInput = w.fileInfo.Name()
-	if parent != nil && parent.timeInput != "" {
-		w.timeInput = parent.timeInput + string(os.PathSeparator) + w.timeInput
-	}
 	w.layout = layout
-	w.ownLayout = ownLayout
 
 	lm := parseLayout(layout)
 	if lm == nil {
 		w.setNonCalendar()
 	} else {
-		t, err := time.Parse(layout, w.timeInput)
-		if err == nil {
+		if t, err := time.Parse(layout, w.timeInput); err == nil {
 			w.t = t
 			w.unit = lm.MinimalUnit
 		} else {
+			// TODO(nicer-to-have): actually we should know when failing time.Parse is OK (non-calendar paths)
+			//       or when it's a bad files given (real error should be returned)
 			w.setNonCalendar()
 		}
 	}
@@ -114,7 +90,7 @@ func NewTimeNamedWaypointFile(ctx context.Context, path string, parentArg ...*Ti
 		}
 
 		for _, innerPath := range innerPaths {
-			child, err := NewTimeNamedWaypointFile(ctx, innerPath, w)
+			child, err := NewTimeNamedWaypointFile(ctx, innerPath, fullLayout, w)
 			if err != nil {
 				// TODO(nice-to-have): add configurable way to halt on child error, to log/omit errors, etc
 				log.Printf("child: NewTimeNamedWaypointFile(%s) failed: %s\n", innerPath, err)
