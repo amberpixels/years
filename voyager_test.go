@@ -277,6 +277,42 @@ var _ = Describe("Voyager", func() {
 				})
 			})
 		})
+
+		// TODO: fix when done
+		XContext("Logs via timestamp", func() {
+			const TestCalendarLayout = "foobar_0000000000.log"
+			ctx := context.Background()
+
+			// Calendar2 is different in the manner of how final files are named.
+			// here, on Calendar2 final files are not sufficient for knowing the date (so they require parent information)
+			// e.g. 2006/Jan/01-Mon.txt
+			var CalendarPath = filepath.Join(TestDataPath, "logs_via_timestamp")
+
+			var wf *years.TimeNamedWaypointFile
+			var v *years.Voyager
+			BeforeEach(func() {
+				var err error
+				wf, err = years.NewTimeNamedWaypointFile(ctx, CalendarPath, TestCalendarLayout)
+				Expect(err).To(Succeed())
+
+				v = years.NewVoyager(wf)
+			})
+
+			Context("traversing", func() {
+				It("should traverse it in Future / Leaves only", func() {
+					identifiers := make([]string, 0)
+					err := v.Traverse(func(w years.Waypoint) {
+						identifiers = append(identifiers, w.Identifier())
+					}, years.O_FUTURE(), years.O_LEAVES_ONLY())
+
+					Expect(err).Should(Succeed())
+					Expect(identifiers).To(Equal([]string{
+						"internal/testdata/logs_via_timestamp/foobar_17166559191.log",
+					}))
+				})
+
+			})
+		})
 	})
 
 	Context("FileWaypoints", func() {

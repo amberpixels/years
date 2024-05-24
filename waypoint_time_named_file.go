@@ -71,14 +71,20 @@ func NewTimeNamedWaypointFile(ctx context.Context, path string, fullLayout strin
 	if lm == nil {
 		w.setNonCalendar()
 	} else {
-		if t, err := time.Parse(layout, w.timeInput); err == nil {
-			w.t = t
-			w.unit = lm.MinimalUnit
+		w.unit = lm.MinimalUnit
+		if lm.GoFormat {
+			if t, err := time.Parse(layout, w.timeInput); err == nil {
+				w.t = t
+			} else {
+				// TODO(nicer-to-have): actually we should know when failing time.Parse is OK (non-calendar paths)
+				//       or when it's a bad files given (real error should be returned)
+				w.setNonCalendar()
+			}
 		} else {
-			// TODO(nicer-to-have): actually we should know when failing time.Parse is OK (non-calendar paths)
-			//       or when it's a bad files given (real error should be returned)
-			w.setNonCalendar()
+			// TODO: implement non-GoFormat time parsing
+			// for now it's only UnixMilli / UnixSec
 		}
+
 	}
 
 	if w.fileInfo.IsDir() {

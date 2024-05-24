@@ -17,6 +17,11 @@ const (
 	Day DateUnit = 1 << (iota - 1)
 	Month
 	Year
+
+	// UnixSecond is a special unit for Unix time in seconds
+	UnixSecond
+	// UnixMillisecond is a special unit for Unix time in milliseconds
+	UnixMillisecond
 )
 
 func (du DateUnit) String() string {
@@ -27,6 +32,10 @@ func (du DateUnit) String() string {
 		return "month"
 	case Year:
 		return "year"
+	case UnixSecond:
+		return "unix_second"
+	case UnixMillisecond:
+		return "unix_millisecond"
 	case UnitUndefined:
 		return ""
 	default:
@@ -41,10 +50,16 @@ var DateUnitsDict = struct {
 	Day   DateUnit
 	Month DateUnit
 	Year  DateUnit
+
+	UnixSecond      DateUnit
+	UnixMillisecond DateUnit
 }{
 	Day:   Day,
 	Month: Month,
 	Year:  Year,
+
+	UnixSecond:      UnixSecond,
+	UnixMillisecond: UnixMillisecond,
 }
 
 // LayoutMeta stores parsed meta information about given layout string
@@ -113,6 +128,13 @@ func parseLayout(layout string) *LayoutMeta {
 			result.MinimalUnit = Year
 		}
 		result.Units = append(result.Units, Year)
+	}
+
+	if strings.Contains(layout, "000000000") {
+		result.Units = append(result.Units, UnixSecond)
+		result.MinimalUnit = UnixSecond
+		result.GoFormat = false
+		return result
 	}
 
 	if len(result.Units) == 0 {
