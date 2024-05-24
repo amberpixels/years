@@ -50,15 +50,7 @@ func globalLayoutFromCtx(ctx context.Context) string {
 	return ctx.Value("global_layout").(string)
 }
 
-func withCtxWaypointFileParent(ctx context.Context, v *TimeNamedWaypointFile) context.Context {
-	return context.WithValue(ctx, "parent", v)
-}
-func parentFromCtx(ctx context.Context) *TimeNamedWaypointFile {
-	p, _ := ctx.Value("parent").(*TimeNamedWaypointFile)
-	return p
-}
-
-func NewTimeNamedWaypointFile(ctx context.Context, path string) (*TimeNamedWaypointFile, error) {
+func NewTimeNamedWaypointFile(ctx context.Context, path string, parentArg ...*TimeNamedWaypointFile) (*TimeNamedWaypointFile, error) {
 	globalLayout := globalLayoutFromCtx(ctx)
 	if globalLayout == "" {
 		panic("global_layout is required")
@@ -74,7 +66,11 @@ func NewTimeNamedWaypointFile(ctx context.Context, path string) (*TimeNamedWaypo
 	var ownLayout, layout string
 	globalLayoutParts := strings.Split(globalLayout, string(os.PathSeparator))
 
-	parent := parentFromCtx(ctx)
+	var parent *TimeNamedWaypointFile
+	if len(parentArg) > 0 {
+		parent = parentArg[0]
+	}
+
 	if parent != nil {
 		ownLayout = strings.TrimPrefix(globalLayout, parent.layout+"/")
 		if w.fileInfo.IsDir() {
@@ -118,7 +114,7 @@ func NewTimeNamedWaypointFile(ctx context.Context, path string) (*TimeNamedWaypo
 		}
 
 		for _, innerPath := range innerPaths {
-			child, err := NewTimeNamedWaypointFile(withCtxWaypointFileParent(ctx, w), innerPath)
+			child, err := NewTimeNamedWaypointFile(ctx, innerPath, w)
 			if err != nil {
 				// TODO(nice-to-have): add configurable way to halt on child error, to log/omit errors, etc
 				log.Printf("child: NewTimeNamedWaypointFile(%s) failed: %s\n", innerPath, err)
