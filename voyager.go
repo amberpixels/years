@@ -47,6 +47,7 @@ func defaultTraverseConfig() traverseConfig {
 
 // isTraversable checks if a given waypoint is traversable corresponding to config
 func (config *traverseConfig) isTraversable(waypoint Waypoint) bool {
+	fmt.Println("~~~", waypoint.Time(), config.includeNonCalendarNodes)
 	if waypoint.Time().IsZero() && !config.includeNonCalendarNodes {
 		return false
 	}

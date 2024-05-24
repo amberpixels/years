@@ -80,7 +80,6 @@ func (lm *LayoutMeta) HasDay() bool   { return lm.HasUnit(Day) }
 // Note: it's a pretty hacky/weak function, but we're OK with it for now
 func parseLayout(layout string) *LayoutMeta {
 	result := &LayoutMeta{Units: make([]DateUnit, 0)}
-	result.GoFormat = true
 
 	// Day of the month: "2" "_2" "02"
 	// weak check for now via regex: 2 not followed by 0 because of 2006
@@ -115,6 +114,14 @@ func parseLayout(layout string) *LayoutMeta {
 		}
 		result.Units = append(result.Units, Year)
 	}
+
+	if len(result.Units) == 0 {
+		// temporary very simple way of saying it's not a valid layout
+		return nil
+	}
+
+	// for now all layouts are Go-format only
+	result.GoFormat = true
 
 	return result
 }

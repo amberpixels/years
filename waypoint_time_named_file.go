@@ -30,6 +30,14 @@ type TimeNamedWaypointFile struct {
 	unit DateUnit
 }
 
+func (w *TimeNamedWaypointFile) setNonCalendar() {
+	w.layout = ""
+	w.timeInput = ""
+	w.ownLayout = ""
+	w.timeInput = ""
+	w.t = time.Time{}
+}
+
 type TimeNamedWaypointFiles []*TimeNamedWaypointFile
 
 func (w *TimeNamedWaypointFile) Time() time.Time { return w.t }
@@ -56,26 +64,26 @@ func NewTimeNamedWaypointFile(ctx context.Context, path string) (*TimeNamedWaypo
 		panic("global_layout is required")
 	}
 
-	w0, _ := NewWaypointFile(ctx, path)
-	w := &TimeNamedWaypointFile{WaypointFile: w0}
-
-	parent := parentFromCtx(ctx)
-	if parent == nil {
-		w.isRoot = true
+	stat, err := os.Stat(path)
+	if err != nil {
+		return nil, err
 	}
+	w0 := &WaypointFile{path: path, fileInfo: stat, t: stat.ModTime()}
+	w := &TimeNamedWaypointFile{WaypointFile: w0}
 
 	var ownLayout, layout string
 	globalLayoutParts := strings.Split(globalLayout, string(os.PathSeparator))
 
-	if w.isRoot {
-		ownLayout = globalLayoutParts[0]
-		layout = ownLayout
-	} else {
+	parent := parentFromCtx(ctx)
+	if parent != nil {
 		ownLayout = strings.TrimPrefix(globalLayout, parent.layout+"/")
 		if w.fileInfo.IsDir() {
 			ownLayout = strings.Split(ownLayout, string(os.PathSeparator))[0]
 		}
 		layout = parent.layout + string(os.PathSeparator) + ownLayout
+	} else {
+		ownLayout = globalLayoutParts[0]
+		layout = ownLayout
 	}
 
 	layout = strings.TrimPrefix(layout, string(os.PathSeparator))
@@ -88,21 +96,16 @@ func NewTimeNamedWaypointFile(ctx context.Context, path string) (*TimeNamedWaypo
 	w.layout = layout
 	w.ownLayout = ownLayout
 
-	// TODO: fix this
-	if w.fileInfo.Name() == "calendar1" || w.fileInfo.Name() == "calendar2" {
-		w.layout = ""
-		w.timeInput = ""
-		w.ownLayout = ""
-	}
-
-	if w.timeInput != "" {
+	lm := parseLayout(layout)
+	if lm == nil {
+		w.setNonCalendar()
+	} else {
 		t, err := time.Parse(layout, w.timeInput)
-		if err != nil {
-			log.Printf("Error parsing time from file %s: %v\n", w.timeInput, err)
-		} else {
+		if err == nil {
 			w.t = t
-			lm := parseLayout(layout)
 			w.unit = lm.MinimalUnit
+		} else {
+			w.setNonCalendar()
 		}
 	}
 
