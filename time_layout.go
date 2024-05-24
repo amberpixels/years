@@ -68,7 +68,7 @@ type LayoutMeta struct {
 	// MinimalUnit e.g. Day for "2006-01-02" and Month for "2006-01"
 	MinimalUnit DateUnit
 
-	// GoFormat is true when layout is in pure Go time.Time layout format
+	// GoFormat is true when layout is in pure Go time.MutatingTime layout format
 	// Currently it's always true
 	// TODO: support formats that are popular in JS (YYYY, etc)
 	GoFormat bool

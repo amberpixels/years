@@ -2,30 +2,29 @@ package years
 
 import "time"
 
-// Time is a wrapper of a standard time.Time
-// The time.Time is stored intentionally under the pointer for an easy use to modify it
+// MutatingTime is a wrapper of a standard time.Time so it can be mutated via helper methods
 //
 // Example:
 //
-//	 t, _ := time.Parse("...")
-//		Wrap(&t).SomeModifyingMethod() // leads to update the t
-type Time struct {
+//	t, _ := time.Parse("...")
+//	Mutate(&t).SomeModifyingMethod() // leads to update the t
+type MutatingTime struct {
 	t *time.Time
 }
 
-func Wrap(v *time.Time) *Time {
-	return &Time{v}
+func Mutate(v *time.Time) *MutatingTime {
+	return &MutatingTime{v}
 }
 
 // TruncateToDay overrides hour, minute, second, nanosecond to zero
-func (t *Time) TruncateToDay() *Time {
+func (t *MutatingTime) TruncateToDay() *MutatingTime {
 	*(t.t) = time.Date(t.t.Year(), t.t.Month(), t.t.Day(), 0, 0, 0, 0, t.t.Location())
 
 	return t
 }
 
 // SetYear overrides year of the time
-func (t *Time) SetYear(v int) *Time {
+func (t *MutatingTime) SetYear(v int) *MutatingTime {
 	*(t.t) = time.Date(0, t.t.Month(), t.t.Day(), t.t.Hour(), t.t.Minute(), t.t.Second(), t.t.Nanosecond(), t.t.Location()).
 		AddDate(v, 0, 0)
 
@@ -33,7 +32,7 @@ func (t *Time) SetYear(v int) *Time {
 }
 
 // SetMonth overrides month of the time
-func (t *Time) SetMonth(month time.Month) *Time {
+func (t *MutatingTime) SetMonth(month time.Month) *MutatingTime {
 	*(t.t) = time.Date(t.t.Year(), 0, t.t.Day(), t.t.Hour(), t.t.Minute(), t.t.Second(), t.t.Nanosecond(), t.t.Location()).
 		AddDate(0, int(month), 0)
 
@@ -42,7 +41,7 @@ func (t *Time) SetMonth(month time.Month) *Time {
 
 // SetDay overrides day of the time
 // Note: Feb2 .SetDay(31) will lead to ~Mar2-3 (depending on days in Feb)
-func (t *Time) SetDay(day int) *Time {
+func (t *MutatingTime) SetDay(day int) *MutatingTime {
 	*(t.t) = time.Date(t.t.Year(), t.t.Month(), t.t.Day(), t.t.Hour(), t.t.Minute(), t.t.Second(), t.t.Nanosecond(), t.t.Location()).
 		AddDate(0, 0, day)
 
@@ -50,7 +49,7 @@ func (t *Time) SetDay(day int) *Time {
 }
 
 // SetHour overrides hour of the time
-func (t *Time) SetHour(hour int) *Time {
+func (t *MutatingTime) SetHour(hour int) *MutatingTime {
 	if hour < 0 || hour >= 24 {
 		panic("SetMinute accepts hour to be from 0 to 23")
 	}
@@ -62,7 +61,7 @@ func (t *Time) SetHour(hour int) *Time {
 }
 
 // SetMinute overrides minute of the time
-func (t *Time) SetMinute(minute int) *Time {
+func (t *MutatingTime) SetMinute(minute int) *MutatingTime {
 	if minute < 0 || minute >= 60 {
 		panic("SetMinute accepts minute to be from 0 to 59")
 	}
@@ -74,7 +73,7 @@ func (t *Time) SetMinute(minute int) *Time {
 }
 
 // SetSecond overrides second of the time
-func (t *Time) SetSecond(second int) *Time {
+func (t *MutatingTime) SetSecond(second int) *MutatingTime {
 	if second < 0 || second >= 60 {
 		panic("SetMinute accepts second to be from 0 to 59")
 	}
@@ -86,7 +85,7 @@ func (t *Time) SetSecond(second int) *Time {
 }
 
 // SetNanosecond overrides nanosecond of the time
-func (t *Time) SetNanosecond(nanosecond int) *Time {
+func (t *MutatingTime) SetNanosecond(nanosecond int) *MutatingTime {
 	if nanosecond < 0 || nanosecond >= 60 {
 		panic("SetMinute accepts nanosecond to be from 0 to 59")
 	}
@@ -97,4 +96,4 @@ func (t *Time) SetNanosecond(nanosecond int) *Time {
 	return t
 }
 
-func (t *Time) Time() time.Time { return *(t.t) }
+func (t *MutatingTime) Time() time.Time { return *(t.t) }
