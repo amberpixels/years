@@ -3,7 +3,10 @@ package years
 import "time"
 
 // coreAliases holds all registered aliases
-// TODO: allow to change Sunday/Monday week start via configuration
+// Aliases that are timezone-dependent by default use timezone of given base time
+//
+// TODO(nice-to-have): allow to change Sunday/Monday week start via configuration
+// TODO(nice-to-have): refactor keys are not just hardcoded strings, but should be language-depended, so they can be translated.
 var coreAliases = map[string]func(time.Time) time.Time{
 	"today": func(base time.Time) time.Time {
 		return Mutate(&base).TruncateToDay().Time()
