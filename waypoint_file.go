@@ -1,7 +1,8 @@
 package years
 
 import (
-	"context"
+	"fmt"
+	"github.com/djherbis/times"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,11 +15,17 @@ type WaypointFile struct {
 	// It's the request field for .prepare() to be called
 	path string
 
-	// Time representing the start of its range (e.g. start of the day for daily waypoints)
-	t time.Time
+	// timeGetter is a function that returns time of the waypoint based on file time spec
+	timeGetter func(timeSpec times.Timespec) time.Time
 
 	// fileInfo holds the file info for the given file
 	fileInfo os.FileInfo
+
+	// timeSpec holds cross-platform file time creation/modification/access/birth information
+	timeSpec times.Timespec
+
+	// t is the time of the waypoint
+	t time.Time
 
 	// IsRoot is a boolean flag stating for a root waypoint
 	isRoot bool
@@ -29,17 +36,23 @@ type WaypointFile struct {
 
 type WaypointFiles []*WaypointFile
 
-func (w *WaypointFile) Time() time.Time      { return w.fileInfo.ModTime() }
+func (w *WaypointFile) Time() time.Time      { return w.t }
 func (w *WaypointFile) Identifier() string   { return w.path }
 func (w *WaypointFile) IsContainer() bool    { return w.fileInfo.IsDir() }
 func (w *WaypointFile) Children() []Waypoint { return w.waypoints }
 
-func NewWaypointFile(ctx context.Context, path string) (*WaypointFile, error) {
+func NewWaypointFile(path string, timeGetter func(timeSpec times.Timespec) time.Time) (*WaypointFile, error) {
 	stat, err := os.Stat(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not os.Stat file: %w", err)
 	}
-	w := &WaypointFile{path: path, fileInfo: stat, t: stat.ModTime()}
+
+	timeSpec, err := times.Stat(path)
+	if err != nil {
+		return nil, fmt.Errorf("could not times.Stat file: %w", err)
+	}
+
+	w := &WaypointFile{path: path, fileInfo: stat, timeSpec: timeSpec, t: timeGetter(timeSpec)}
 
 	if stat.IsDir() {
 		// Go deeper in the directory
@@ -49,7 +62,7 @@ func NewWaypointFile(ctx context.Context, path string) (*WaypointFile, error) {
 		}
 
 		for _, innerPath := range innerPaths {
-			child, err := NewWaypointFile(ctx, innerPath)
+			child, err := NewWaypointFile(innerPath, timeGetter)
 			if err != nil {
 				// TODO(nice-to-have): add configurable way to halt on child error, to log/omit errors, etc
 				log.Printf("child: NewWaypointFile(%s) failed: %s\n", innerPath, err)

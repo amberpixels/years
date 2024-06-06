@@ -1,8 +1,8 @@
 package years_test
 
 import (
-	"context"
 	"github.com/amberpixels/years"
+	"github.com/djherbis/times"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"path/filepath"
@@ -364,60 +364,125 @@ var _ = Describe("Voyager", func() {
 
 	Context("FileWaypoints", func() {
 
-		var CalendarPath = filepath.Join(TestDataPath, "by_mtime")
-		var ctx = context.Background()
-		var wf *years.WaypointFile
-		var v *years.Voyager
-		BeforeEach(func() {
-			var err error
-			wf, err = years.NewWaypointFile(ctx, CalendarPath)
-			Expect(err).To(Succeed())
+		Context("BirthTime", func() {
 
-			v = years.NewVoyager(wf)
+			var CalendarPath = filepath.Join(TestDataPath, "by_filetime")
+			var wf *years.WaypointFile
+			var v *years.Voyager
+			BeforeEach(func() {
+				var err error
+				wf, err = years.NewWaypointFile(CalendarPath, func(timeSpec times.Timespec) time.Time {
+					return timeSpec.BirthTime()
+				})
+				Expect(err).To(Succeed())
+
+				v = years.NewVoyager(wf)
+			})
+
+			Context("traversing", func() {
+				It("should traverse it in Future / Leaves only", func() {
+					identifiers := make([]string, 0)
+					err := v.Traverse(func(w years.Waypoint) {
+						identifiers = append(identifiers, w.Identifier())
+					}, years.O_FUTURE(), years.O_LEAVES_ONLY())
+
+					Expect(err).Should(Succeed())
+					Expect(identifiers).To(Equal([]string{
+						"internal/testdata/by_filetime/first.txt",
+						"internal/testdata/by_filetime/foobar/second.txt",
+						"internal/testdata/by_filetime/foobar/third.txt",
+					}))
+				})
+
+				It("should traverse it in Past / Containers only", func() {
+					identifiers := make([]string, 0)
+					err := v.Traverse(func(w years.Waypoint) {
+						identifiers = append(identifiers, w.Identifier())
+					}, years.O_PAST(), years.O_CONTAINERS_ONLY())
+
+					Expect(err).Should(Succeed())
+					Expect(identifiers).To(Equal([]string{
+						"internal/testdata/by_filetime/foobar",
+						"internal/testdata/by_filetime",
+					}))
+				})
+
+				It("should traverse it in Future / ALL", func() {
+					identifiers := make([]string, 0)
+					err := v.Traverse(func(w years.Waypoint) {
+						identifiers = append(identifiers, w.Identifier())
+					}, years.O_PAST(), years.O_ALL())
+
+					Expect(err).Should(Succeed())
+					Expect(identifiers).To(Equal([]string{
+						"internal/testdata/by_filetime/foobar/third.txt",
+						"internal/testdata/by_filetime/foobar/second.txt",
+						"internal/testdata/by_filetime/first.txt",
+						"internal/testdata/by_filetime/foobar",
+						"internal/testdata/by_filetime",
+					}))
+				})
+			})
 		})
 
-		Context("traversing", func() {
-			It("should traverse it in Future / Leaves only", func() {
-				identifiers := make([]string, 0)
-				err := v.Traverse(func(w years.Waypoint) {
-					identifiers = append(identifiers, w.Identifier())
-				}, years.O_FUTURE(), years.O_LEAVES_ONLY())
+		Context("ModTime", func() {
 
-				Expect(err).Should(Succeed())
-				Expect(identifiers).To(Equal([]string{
-					"internal/testdata/by_mtime/first.txt",
-					"internal/testdata/by_mtime/foobar/second.txt",
-					"internal/testdata/by_mtime/foobar/third.txt",
-				}))
+			var CalendarPath = filepath.Join(TestDataPath, "by_filetime")
+			var wf *years.WaypointFile
+			var v *years.Voyager
+			BeforeEach(func() {
+				var err error
+				wf, err = years.NewWaypointFile(CalendarPath, func(timeSpec times.Timespec) time.Time {
+					return timeSpec.ModTime()
+				})
+				Expect(err).To(Succeed())
+
+				v = years.NewVoyager(wf)
 			})
 
-			It("should traverse it in Past / Containers only", func() {
-				identifiers := make([]string, 0)
-				err := v.Traverse(func(w years.Waypoint) {
-					identifiers = append(identifiers, w.Identifier())
-				}, years.O_PAST(), years.O_CONTAINERS_ONLY())
+			Context("traversing", func() {
+				It("should traverse it in Future / Leaves only", func() {
+					identifiers := make([]string, 0)
+					err := v.Traverse(func(w years.Waypoint) {
+						identifiers = append(identifiers, w.Identifier())
+					}, years.O_FUTURE(), years.O_LEAVES_ONLY())
 
-				Expect(err).Should(Succeed())
-				Expect(identifiers).To(Equal([]string{
-					"internal/testdata/by_mtime",
-					"internal/testdata/by_mtime/foobar",
-				}))
-			})
+					Expect(err).Should(Succeed())
+					Expect(identifiers).To(Equal([]string{
+						"internal/testdata/by_filetime/first.txt",
+						"internal/testdata/by_filetime/foobar/second.txt",
+						"internal/testdata/by_filetime/foobar/third.txt",
+					}))
+				})
 
-			It("should traverse it in Future / ALL", func() {
-				identifiers := make([]string, 0)
-				err := v.Traverse(func(w years.Waypoint) {
-					identifiers = append(identifiers, w.Identifier())
-				}, years.O_PAST(), years.O_ALL())
+				It("should traverse it in Past / Containers only", func() {
+					identifiers := make([]string, 0)
+					err := v.Traverse(func(w years.Waypoint) {
+						identifiers = append(identifiers, w.Identifier())
+					}, years.O_PAST(), years.O_CONTAINERS_ONLY())
 
-				Expect(err).Should(Succeed())
-				Expect(identifiers).To(Equal([]string{
-					"internal/testdata/by_mtime",
-					"internal/testdata/by_mtime/foobar",
-					"internal/testdata/by_mtime/foobar/third.txt",
-					"internal/testdata/by_mtime/foobar/second.txt",
-					"internal/testdata/by_mtime/first.txt",
-				}))
+					Expect(err).Should(Succeed())
+					Expect(identifiers).To(Equal([]string{
+						"internal/testdata/by_filetime",
+						"internal/testdata/by_filetime/foobar",
+					}))
+				})
+
+				It("should traverse it in Future / ALL", func() {
+					identifiers := make([]string, 0)
+					err := v.Traverse(func(w years.Waypoint) {
+						identifiers = append(identifiers, w.Identifier())
+					}, years.O_PAST(), years.O_ALL())
+
+					Expect(err).Should(Succeed())
+					Expect(identifiers).To(Equal([]string{
+						"internal/testdata/by_filetime",
+						"internal/testdata/by_filetime/foobar",
+						"internal/testdata/by_filetime/foobar/third.txt",
+						"internal/testdata/by_filetime/foobar/second.txt",
+						"internal/testdata/by_filetime/first.txt",
+					}))
+				})
 			})
 		})
 	})
