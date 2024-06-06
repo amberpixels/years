@@ -2,6 +2,7 @@ package years
 
 import (
 	"fmt"
+	"slices"
 )
 
 type Voyager struct {
@@ -107,51 +108,36 @@ func (v *Voyager) Traverse(cb func(w Waypoint), opts ...TraverseOption) error {
 		opt(&config)
 	}
 
+	// directionSign will be used in sorting func
+	var directionSign int
 	switch config.direction {
 	case TraverseDirectionPast:
-		return v.traversePast(v.root, cb, &config)
+		directionSign = -1
 	case TraverseDirectionFuture:
-		return v.traverseFuture(v.root, cb, &config)
+		directionSign = 1
 	default:
 		panic("invalid traverse direction: " + config.direction)
 	}
-}
 
-func (v *Voyager) traversePast(waypoint Waypoint, cb func(w Waypoint), config *traverseConfig) error {
-	if waypoint == nil {
-		return nil
-	}
-
-	children := waypoint.Children()
-
-	for i := len(children) - 1; i >= 0; i-- {
-		child := children[i]
-		if err := v.traversePast(child, cb, config); err != nil {
-			return fmt.Errorf("failed to traversePast a child: %w", err)
+	sortFn := func(a, b Waypoint) int {
+		if a.Time() == b.Time() {
+			return directionSign
 		}
+
+		if a.Time().After(b.Time()) {
+			return directionSign
+		}
+
+		return -directionSign
 	}
 
-	if config.isTraversable(waypoint) {
-		cb(waypoint)
-	}
+	sorted := AllChildren(v.root)
+	sorted = append(sorted, v.root)
+	slices.SortFunc(sorted, sortFn)
 
-	return nil
-}
-
-func (v *Voyager) traverseFuture(waypoint Waypoint, cb func(w Waypoint), config *traverseConfig) error {
-	if waypoint == nil {
-		return nil
-	}
-
-	if config.isTraversable(waypoint) {
-		cb(waypoint)
-	}
-
-	children := waypoint.Children()
-
-	for _, child := range children {
-		if err := v.traverseFuture(child, cb, config); err != nil {
-			return fmt.Errorf("failed to traverseFuture a child: %w", err)
+	for _, sw := range sorted {
+		if config.isTraversable(sw) {
+			cb(sw)
 		}
 	}
 

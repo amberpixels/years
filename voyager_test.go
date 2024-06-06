@@ -295,8 +295,7 @@ var _ = Describe("Voyager", func() {
 			})
 
 			Context("traversing", func() {
-				// TODO enable when traversing sorting fixed (timeless containers)
-				XIt("should traverse it in Future / Leaves only", func() {
+				It("should traverse it in Future / Leaves only", func() {
 					identifiers := make([]string, 0)
 					err := v.Traverse(func(w years.Waypoint) {
 						identifiers = append(identifiers, w.Identifier())
@@ -313,8 +312,7 @@ var _ = Describe("Voyager", func() {
 					Expect(identifiers).To(Equal(expectedIdentifiers))
 				})
 
-				// TODO enable when traversing sorting fixed (timeless containers)
-				XIt("should traverse it in Past / Leaves only", func() {
+				It("should traverse it in Past / Leaves only", func() {
 					identifiers := make([]string, 0)
 					err := v.Traverse(func(w years.Waypoint) {
 						identifiers = append(identifiers, w.Identifier())
@@ -344,8 +342,7 @@ var _ = Describe("Voyager", func() {
 					Expect(identifiers).To(Equal(expectedIdentifiers))
 				})
 
-				// TODO enable when traversing sorting fixed (timeless containers)
-				XIt("should traverse it in Future / All only", func() {
+				It("should traverse it in Future / All only", func() {
 					identifiers := make([]string, 0)
 					err := v.Traverse(func(w years.Waypoint) {
 						identifiers = append(identifiers, w.Identifier())
@@ -402,8 +399,8 @@ var _ = Describe("Voyager", func() {
 
 				Expect(err).Should(Succeed())
 				Expect(identifiers).To(Equal([]string{
-					"internal/testdata/by_mtime/foobar",
 					"internal/testdata/by_mtime",
+					"internal/testdata/by_mtime/foobar",
 				}))
 			})
 
@@ -415,11 +412,11 @@ var _ = Describe("Voyager", func() {
 
 				Expect(err).Should(Succeed())
 				Expect(identifiers).To(Equal([]string{
+					"internal/testdata/by_mtime",
+					"internal/testdata/by_mtime/foobar",
 					"internal/testdata/by_mtime/foobar/third.txt",
 					"internal/testdata/by_mtime/foobar/second.txt",
-					"internal/testdata/by_mtime/foobar",
 					"internal/testdata/by_mtime/first.txt",
-					"internal/testdata/by_mtime",
 				}))
 			})
 		})

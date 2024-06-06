@@ -19,3 +19,15 @@ type Waypoint interface {
 	// E.g. for directories, it should return the list of files and directories inside.
 	Children() []Waypoint
 }
+
+func AllChildren(w Waypoint) []Waypoint {
+	var result []Waypoint
+	if w.IsContainer() {
+		for _, child := range w.Children() {
+			result = append(result, child)
+			result = append(result, AllChildren(child)...)
+		}
+	}
+
+	return result
+}
