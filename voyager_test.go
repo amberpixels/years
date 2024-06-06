@@ -486,4 +486,52 @@ var _ = Describe("Voyager", func() {
 			})
 		})
 	})
+
+	Context("TimeStringWaypoints", func() {
+
+		var ws = []years.Waypoint{
+			years.NewWaypointTimeString("2024-03-05"),
+			years.NewWaypointTimeString("2024-03-06"),
+			years.NewWaypointTimeString("2024-03-07"),
+			years.NewWaypointTimeString("2024-04"),
+		}
+		var v *years.Voyager
+		BeforeEach(func() {
+			v = years.NewVoyager(years.NewWaypointGroup("root", ws...))
+		})
+
+		Context("traversing", func() {
+			It("should traverse it in Future ", func() {
+				identifiers := make([]string, 0)
+				err := v.Traverse(func(w years.Waypoint) {
+					identifiers = append(identifiers, w.Identifier())
+				}, years.O_FUTURE())
+
+				Expect(err).Should(Succeed())
+				Expect(identifiers).To(Equal([]string{
+					"2024-03-05",
+					"2024-03-06",
+					"2024-03-07",
+					"2024-04",
+				}))
+			})
+
+			It("should traverse it in Past", func() {
+				identifiers := make([]string, 0)
+				err := v.Traverse(func(w years.Waypoint) {
+					identifiers = append(identifiers, w.Identifier())
+				}, years.O_PAST())
+
+				Expect(err).Should(Succeed())
+				Expect(identifiers).To(Equal([]string{
+					"2024-04",
+					"2024-03-07",
+					"2024-03-06",
+					"2024-03-05",
+				}))
+			})
+
+		})
+
+	})
 })

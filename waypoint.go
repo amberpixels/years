@@ -20,6 +20,20 @@ type Waypoint interface {
 	Children() []Waypoint
 }
 
+func NewWaypointGroup(identifier string, waypoints ...Waypoint) Waypoint {
+	return &WaypointGroup{identifier: identifier, waypoints: waypoints}
+}
+
+type WaypointGroup struct {
+	waypoints  []Waypoint
+	identifier string
+}
+
+func (wg *WaypointGroup) Time() time.Time      { return time.Time{} }
+func (wg *WaypointGroup) Identifier() string   { return "" }
+func (wg *WaypointGroup) IsContainer() bool    { return true }
+func (wg *WaypointGroup) Children() []Waypoint { return wg.waypoints }
+
 func AllChildren(w Waypoint) []Waypoint {
 	var result []Waypoint
 	if w.IsContainer() {
