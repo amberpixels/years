@@ -161,7 +161,7 @@ func (v *Voyager) traverseFuture(waypoint Waypoint, cb func(w Waypoint), config 
 func (v *Voyager) Navigate(to string) (Waypoint, error) {
 	navigateTo, _ := NewParser(
 		AcceptAliases(),
-		AcceptUnix(),
+		AcceptUnixSeconds(),
 		// todo: supported layouts should be known from voyager
 		WithLayouts("2006-01-02"),
 	).ParseTime(to)

@@ -13,7 +13,6 @@ var _ = Describe("Voyager", func() {
 	Context("TimeNamedFileWaypoints", func() {
 		Context("Calendar1", func() {
 			const TestCalendarLayout = "2006/Jan/2006-01-02.txt"
-			ctx := context.Background()
 
 			var CalendarPath = filepath.Join(TestDataPath, "calendar1")
 
@@ -21,7 +20,7 @@ var _ = Describe("Voyager", func() {
 			var v *years.Voyager
 			BeforeEach(func() {
 				var err error
-				wf, err = years.NewTimeNamedWaypointFile(ctx, CalendarPath, TestCalendarLayout)
+				wf, err = years.NewTimeNamedWaypointFile(CalendarPath, TestCalendarLayout)
 				Expect(err).To(Succeed())
 
 				v = years.NewVoyager(wf)
@@ -147,7 +146,6 @@ var _ = Describe("Voyager", func() {
 
 		Context("Calendar2", func() {
 			const TestCalendarLayout = "2006/Jan/02 Mon.txt"
-			ctx := context.Background()
 
 			// Calendar2 is different in the manner of how final files are named.
 			// here, on Calendar2 final files are not sufficient for knowing the date (so they require parent information)
@@ -158,7 +156,7 @@ var _ = Describe("Voyager", func() {
 			var v *years.Voyager
 			BeforeEach(func() {
 				var err error
-				wf, err = years.NewTimeNamedWaypointFile(ctx, CalendarPath, TestCalendarLayout)
+				wf, err = years.NewTimeNamedWaypointFile(CalendarPath, TestCalendarLayout)
 				Expect(err).To(Succeed())
 
 				v = years.NewVoyager(wf)
@@ -278,10 +276,8 @@ var _ = Describe("Voyager", func() {
 			})
 		})
 
-		// TODO: fix when done
-		XContext("Logs via timestamp", func() {
-			const TestCalendarLayout = "foobar_0000000000.log"
-			ctx := context.Background()
+		Context("Logs via timestamp", func() {
+			const TestCalendarLayout = "foobar_U@000.log"
 
 			// Calendar2 is different in the manner of how final files are named.
 			// here, on Calendar2 final files are not sufficient for knowing the date (so they require parent information)
@@ -292,25 +288,79 @@ var _ = Describe("Voyager", func() {
 			var v *years.Voyager
 			BeforeEach(func() {
 				var err error
-				wf, err = years.NewTimeNamedWaypointFile(ctx, CalendarPath, TestCalendarLayout)
+				wf, err = years.NewTimeNamedWaypointFile(CalendarPath, TestCalendarLayout)
 				Expect(err).To(Succeed())
 
 				v = years.NewVoyager(wf)
 			})
 
 			Context("traversing", func() {
-				It("should traverse it in Future / Leaves only", func() {
+				// TODO enable when traversing sorting fixed (timeless containers)
+				XIt("should traverse it in Future / Leaves only", func() {
 					identifiers := make([]string, 0)
 					err := v.Traverse(func(w years.Waypoint) {
 						identifiers = append(identifiers, w.Identifier())
 					}, years.O_FUTURE(), years.O_LEAVES_ONLY())
 
 					Expect(err).Should(Succeed())
-					Expect(identifiers).To(Equal([]string{
-						"internal/testdata/logs_via_timestamp/foobar_17166559191.log",
-					}))
+					expectedIdentifiers := []string{
+						"internal/testdata/logs_via_timestamp/foobar_1716559191.log",
+						"internal/testdata/logs_via_timestamp/foobar_1716559238.log",
+						"internal/testdata/logs_via_timestamp/foobar_1716559253.log",
+						"internal/testdata/logs_via_timestamp/inner/foobar_1717669999.log",
+					}
+
+					Expect(identifiers).To(Equal(expectedIdentifiers))
 				})
 
+				// TODO enable when traversing sorting fixed (timeless containers)
+				XIt("should traverse it in Past / Leaves only", func() {
+					identifiers := make([]string, 0)
+					err := v.Traverse(func(w years.Waypoint) {
+						identifiers = append(identifiers, w.Identifier())
+					}, years.O_PAST(), years.O_LEAVES_ONLY())
+
+					Expect(err).Should(Succeed())
+					expectedIdentifiers := []string{
+						"internal/testdata/logs_via_timestamp/inner/foobar_1717669999.log",
+						"internal/testdata/logs_via_timestamp/foobar_1716559253.log",
+						"internal/testdata/logs_via_timestamp/foobar_1716559238.log",
+						"internal/testdata/logs_via_timestamp/foobar_1716559191.log",
+					}
+
+					Expect(identifiers).To(Equal(expectedIdentifiers))
+				})
+
+				It("should traverse it in Future / Containers only", func() {
+					identifiers := make([]string, 0)
+					err := v.Traverse(func(w years.Waypoint) {
+						identifiers = append(identifiers, w.Identifier())
+					}, years.O_FUTURE(), years.O_CONTAINERS_ONLY())
+
+					Expect(err).Should(Succeed())
+					// no containers actually
+					expectedIdentifiers := []string{}
+
+					Expect(identifiers).To(Equal(expectedIdentifiers))
+				})
+
+				// TODO enable when traversing sorting fixed (timeless containers)
+				XIt("should traverse it in Future / All only", func() {
+					identifiers := make([]string, 0)
+					err := v.Traverse(func(w years.Waypoint) {
+						identifiers = append(identifiers, w.Identifier())
+					}, years.O_FUTURE(), years.O_ALL())
+
+					Expect(err).Should(Succeed())
+					// no containers - so ALL means same as leaves only
+					expectedIdentifiers := []string{
+						"internal/testdata/logs_via_timestamp/foobar_1716559191.log",
+						"internal/testdata/logs_via_timestamp/foobar_1716559238.log",
+						"internal/testdata/logs_via_timestamp/foobar_1716559253.log",
+						"internal/testdata/logs_via_timestamp/inner/foobar_1717669999.log"}
+
+					Expect(identifiers).To(Equal(expectedIdentifiers))
+				})
 			})
 		})
 	})

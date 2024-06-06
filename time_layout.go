@@ -5,27 +5,32 @@ import (
 	"strings"
 )
 
-// DateUnit stays for the unit of a date like Day/Month/Year
-// DateTime units (like Hour, Minute, etc) are not supported (they are not needed)
-// TODO: consider supporting week and quarter
+// DateUnit stays for the unit of a date like Day/Month/Year/etc
 type DateUnit int
 
 const (
 	UnitUndefined DateUnit = iota
 	// Day as day of the month
 	// TODO support day of the week + day of the year
-	Day DateUnit = 1 << (iota - 1)
+	Day  DateUnit = 1 << (iota - 1)
+	Week          // not supported yet
 	Month
+	Quarter // not supported yet
 	Year
 
-	// UnixSecond is a special unit for Unix time in seconds
+	// UnixSecond as well as UnixMillisecond, UnixMicrosecond, UnixNanosecond
+	// are special units for Unix timestamps
 	UnixSecond
-	// UnixMillisecond is a special unit for Unix time in milliseconds
 	UnixMillisecond
+	UnixMicrosecond
+	UnixNanosecond
 )
 
 func (du DateUnit) String() string {
 	switch du {
+	case UnitUndefined:
+		return ""
+
 	case Day:
 		return "day"
 	case Month:
@@ -36,8 +41,10 @@ func (du DateUnit) String() string {
 		return "unix_second"
 	case UnixMillisecond:
 		return "unix_millisecond"
-	case UnitUndefined:
-		return ""
+	case UnixMicrosecond:
+		return "unix_microsecond"
+	case UnixNanosecond:
+		return "unix_nanosecond"
 	default:
 		panic("fix DateUnit enum!")
 	}
@@ -53,48 +60,86 @@ var DateUnitsDict = struct {
 
 	UnixSecond      DateUnit
 	UnixMillisecond DateUnit
+	UnixMicrosecond DateUnit
+	UnixNanosecond  DateUnit
 }{
 	Day:   Day,
 	Month: Month,
 	Year:  Year,
 
+	// TODO: support week and quarter
+
 	UnixSecond:      UnixSecond,
 	UnixMillisecond: UnixMillisecond,
+	UnixMicrosecond: UnixMicrosecond,
+	UnixNanosecond:  UnixNanosecond,
 }
 
-// LayoutMeta stores parsed meta information about given layout string
+type LayoutFormat int
+
+const (
+	LayoutFormatUndefined LayoutFormat = iota
+	// LayoutFormatGo is a format that is supported by Go time.Parse
+	LayoutFormatGo = 1 << (iota - 1)
+	// LayoutFormatUnixTimestamp is a format that parses time from Unix timestamp (seconds or milliseconds)
+	LayoutFormatUnixTimestamp
+
+	// TODO(nice-to-have): support more formats, e.g. JS-like formats (YYYY, etc)
+)
+
+func (lf LayoutFormat) String() string {
+	switch lf {
+	case LayoutFormatGo:
+		return "go"
+	case LayoutFormatUnixTimestamp:
+		return "unix_timestamp"
+	default:
+		panic("fix LayoutFormat enum!")
+	}
+}
+
+// LayoutFormatDict holds all available LayoutFormats
+var LayoutFormatDict = struct {
+	GoFormat      LayoutFormat
+	UnixTimestamp LayoutFormat
+}{
+	GoFormat:      LayoutFormatGo,
+	UnixTimestamp: LayoutFormatUnixTimestamp,
+}
+
+const (
+	LayoutTimestampSeconds      = "U@"
+	LayoutTimestampMilliseconds = "U@000"
+	LayoutTimestampMicroseconds = "U@000000"
+	LayoutTimestampNanoseconds  = "U@000000000"
+)
+
+// LayoutDetails stores parsed meta information about given layout string
 // e.g. "2006-02-01"
-type LayoutMeta struct {
+type LayoutDetails struct {
 	// MinimalUnit e.g. Day for "2006-01-02" and Month for "2006-01"
 	MinimalUnit DateUnit
 
-	// GoFormat is true when layout is in pure Go time.MutatingTime layout format
-	// Currently it's always true
-	// TODO: support formats that are popular in JS (YYYY, etc)
-	GoFormat bool
+	// Format is the format of the time used in the layout
+	Format LayoutFormat
 
 	// Units met in layout
 	Units []DateUnit
 }
 
-func (lm *LayoutMeta) HasUnit(q DateUnit) bool {
+func (lm *LayoutDetails) HasUnit(q DateUnit) bool {
 	for _, u := range lm.Units {
 		if u == q {
 			return true
 		}
 	}
+
 	return false
 }
 
-func (lm *LayoutMeta) HasYear() bool  { return lm.HasUnit(Year) }
-func (lm *LayoutMeta) HasMonth() bool { return lm.HasUnit(Month) }
-func (lm *LayoutMeta) HasDay() bool   { return lm.HasUnit(Day) }
-
-// parseLayout returns one of the units: year/month/day
-// by the given format
 // Note: it's a pretty hacky/weak function, but we're OK with it for now
-func parseLayout(layout string) *LayoutMeta {
-	result := &LayoutMeta{Units: make([]DateUnit, 0)}
+func ParseLayout(layout string) *LayoutDetails {
+	result := &LayoutDetails{Units: make([]DateUnit, 0)}
 
 	// Day of the month: "2" "_2" "02"
 	// weak check for now via regex: 2 not followed by 0 because of 2006
@@ -130,10 +175,23 @@ func parseLayout(layout string) *LayoutMeta {
 		result.Units = append(result.Units, Year)
 	}
 
-	if strings.Contains(layout, "000000000") {
-		result.Units = append(result.Units, UnixSecond)
-		result.MinimalUnit = UnixSecond
-		result.GoFormat = false
+	if strings.Contains(layout, LayoutTimestampSeconds) {
+		result.Format = LayoutFormatUnixTimestamp
+
+		if strings.Contains(layout, LayoutTimestampNanoseconds) {
+			result.Units = append(result.Units, UnixNanosecond)
+			result.MinimalUnit = UnixNanosecond
+		} else if strings.Contains(layout, LayoutTimestampMicroseconds) {
+			result.Units = append(result.Units, UnixMicrosecond)
+			result.MinimalUnit = UnixMicrosecond
+		} else if strings.Contains(layout, LayoutTimestampMilliseconds) {
+			result.Units = append(result.Units, UnixMillisecond)
+			result.MinimalUnit = UnixMillisecond
+		} else {
+			result.Units = append(result.Units, UnixSecond)
+			result.MinimalUnit = UnixSecond
+		}
+
 		return result
 	}
 
@@ -142,8 +200,28 @@ func parseLayout(layout string) *LayoutMeta {
 		return nil
 	}
 
-	// for now all layouts are Go-format only
-	result.GoFormat = true
-
+	// for now, we only support Go-format here
+	result.Format = LayoutFormatGo
 	return result
+}
+
+// find position (start,end) of the timestamp part in the layout (e.g. `U0.` or `U0.000` etc )
+// e.g. `FileName_U0.txt` -> [10, 13]
+func findTimestampPart(layout string) (start, end int) {
+	if !strings.Contains(layout, LayoutTimestampSeconds) {
+		return 0, 0
+	}
+
+	switch true {
+	case strings.Contains(layout, LayoutTimestampNanoseconds):
+		start = strings.Index(layout, LayoutTimestampNanoseconds)
+		end = start + len(LayoutTimestampNanoseconds)
+	case strings.Contains(layout, LayoutTimestampMicroseconds):
+		start = strings.Index(layout, LayoutTimestampMicroseconds)
+		end = start + len(LayoutTimestampMicroseconds)
+	case strings.Contains(layout, LayoutTimestampMilliseconds):
+		start = strings.Index(layout, LayoutTimestampMilliseconds)
+		end = start + len(LayoutTimestampMilliseconds)
+	}
+	return
 }

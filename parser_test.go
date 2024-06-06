@@ -38,7 +38,7 @@ var _ = Describe("Parser", func() {
 			parser := years.NewParser(
 				years.WithCustomClock(mockClock),
 				years.AcceptAliases(),
-				years.AcceptUnix(),
+				years.AcceptUnixSeconds(),
 			)
 
 			today, err := parser.ParseTime("today")

@@ -1,7 +1,6 @@
 package years
 
 import (
-	"context"
 	"log"
 	"os"
 	"path/filepath"
@@ -28,7 +27,6 @@ type TimeNamedWaypointFile struct {
 func (w *TimeNamedWaypointFile) setNonCalendar() {
 	w.layout = ""
 	w.timeInput = ""
-	w.timeInput = ""
 	w.t = time.Time{}
 }
 
@@ -36,7 +34,8 @@ type TimeNamedWaypointFiles []*TimeNamedWaypointFile
 
 func (w *TimeNamedWaypointFile) Time() time.Time { return w.t }
 
-func NewTimeNamedWaypointFile(ctx context.Context, path string, fullLayout string, parentArg ...*TimeNamedWaypointFile) (*TimeNamedWaypointFile, error) {
+func NewTimeNamedWaypointFile(path string, fullLayout string, parentArg ...*TimeNamedWaypointFile) (*TimeNamedWaypointFile, error) {
+
 	stat, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -67,24 +66,12 @@ func NewTimeNamedWaypointFile(ctx context.Context, path string, fullLayout strin
 	layout = strings.TrimPrefix(layout, string(os.PathSeparator))
 	w.layout = layout
 
-	lm := parseLayout(layout)
-	if lm == nil {
+	w.t, err = NewParser().ParseTimeWithLayout(layout, w.timeInput)
+	if err != nil {
 		w.setNonCalendar()
 	} else {
-		w.unit = lm.MinimalUnit
-		if lm.GoFormat {
-			if t, err := time.Parse(layout, w.timeInput); err == nil {
-				w.t = t
-			} else {
-				// TODO(nicer-to-have): actually we should know when failing time.Parse is OK (non-calendar paths)
-				//       or when it's a bad files given (real error should be returned)
-				w.setNonCalendar()
-			}
-		} else {
-			// TODO: implement non-GoFormat time parsing
-			// for now it's only UnixMilli / UnixSec
-		}
-
+		layoutDetails := ParseLayout(layout)
+		w.unit = layoutDetails.MinimalUnit
 	}
 
 	if w.fileInfo.IsDir() {
@@ -96,7 +83,7 @@ func NewTimeNamedWaypointFile(ctx context.Context, path string, fullLayout strin
 		}
 
 		for _, innerPath := range innerPaths {
-			child, err := NewTimeNamedWaypointFile(ctx, innerPath, fullLayout, w)
+			child, err := NewTimeNamedWaypointFile(innerPath, fullLayout, w)
 			if err != nil {
 				// TODO(nice-to-have): add configurable way to halt on child error, to log/omit errors, etc
 				log.Printf("child: NewTimeNamedWaypointFile(%s) failed: %s\n", innerPath, err)
