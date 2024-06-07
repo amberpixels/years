@@ -10,6 +10,24 @@ import (
 )
 
 var _ = Describe("Voyager", func() {
+
+	// Always use Mock time.Now() for our Parser
+	// And specific list of supported layouts
+	BeforeEach(func() {
+		mockClock := &StaticClock{
+			now: time.Date(2024, time.March, 05, 14, 30, 59, 0, time.UTC),
+		}
+		years.SetStdClock(mockClock)
+
+		years.SetDefaults(
+			years.AcceptAliases(), years.AcceptUnixSeconds(),
+			years.WithLayouts(
+				"2006", "Jan", "01",
+				"2006-01", "2006-01-02",
+			),
+		)
+	})
+
 	Context("TimeNamedFileWaypoints", func() {
 		Context("Calendar1", func() {
 			const TestCalendarLayout = "2006/Jan/2006-01-02.txt"
@@ -131,11 +149,6 @@ var _ = Describe("Voyager", func() {
 				})
 
 				It("should navigate to today", func() {
-					mockClock := &StaticClock{
-						now: time.Date(2024, time.March, 05, 14, 30, 59, 0, time.UTC),
-					}
-
-					years.SetStdClock(mockClock)
 					navigated, err := v.Navigate("today")
 					Expect(err).Should(Succeed())
 					Expect(navigated).NotTo(BeNil())
@@ -263,11 +276,6 @@ var _ = Describe("Voyager", func() {
 				})
 
 				It("should navigate to today", func() {
-					mockClock := &StaticClock{
-						now: time.Date(2024, time.March, 05, 14, 30, 59, 0, time.UTC),
-					}
-
-					years.SetStdClock(mockClock)
 					navigated, err := v.Navigate("today")
 					Expect(err).Should(Succeed())
 					Expect(navigated).NotTo(BeNil())
@@ -489,15 +497,18 @@ var _ = Describe("Voyager", func() {
 
 	Context("TimeStringWaypoints", func() {
 
-		var ws = []years.Waypoint{
-			years.NewWaypointTimeString("2024-03-05"),
-			years.NewWaypointTimeString("2024-03-06"),
-			years.NewWaypointTimeString("2024-03-07"),
-			years.NewWaypointTimeString("2024-04"),
-		}
+		var ws []years.Waypoint
 		var v *years.Voyager
 		BeforeEach(func() {
-			v = years.NewVoyager(years.NewWaypointGroup("root", ws...))
+			ws = []years.Waypoint{
+				years.NewWaypointTimeString("2024-03-05"),
+				years.NewWaypointTimeString("2024-03-06"),
+				years.NewWaypointTimeString("2024-03-07"),
+				years.NewWaypointTimeString("2024-04"),
+			}
+			v = years.NewVoyager(
+				years.NewWaypointGroup("root", ws...),
+			)
 		})
 
 		Context("traversing", func() {

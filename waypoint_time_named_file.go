@@ -66,6 +66,7 @@ func NewTimeNamedWaypointFile(path string, fullLayout string, parentArg ...*Time
 	layout = strings.TrimPrefix(layout, string(os.PathSeparator))
 	w.layout = layout
 
+	// Default parser is used. Use years.SetDefaults to configure parsing
 	w.t, err = NewParser().ParseTimeWithLayout(layout, w.timeInput)
 	if err != nil {
 		w.setNonCalendar()

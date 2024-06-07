@@ -11,7 +11,7 @@ type DateUnit int
 const (
 	UnitUndefined DateUnit = iota
 	// Day as day of the month
-	// TODO support day of the week + day of the year
+	// TODO(nice-to-have) support day of the week + day of the year
 	Day  DateUnit = 1 << (iota - 1)
 	Week          // not supported yet
 	Month

@@ -7,10 +7,19 @@ import (
 
 type Voyager struct {
 	root Waypoint
+
+	timeParser *Parser
 }
 
-func NewVoyager(start Waypoint) *Voyager {
-	return &Voyager{root: start}
+func NewVoyager(start Waypoint, parserArg ...*Parser) *Voyager {
+	v := &Voyager{root: start, timeParser: NewParser()}
+	if len(parserArg) > 0 {
+		v.timeParser = parserArg[0]
+	} else {
+		v.timeParser = NewParser()
+	}
+
+	return v
 }
 
 // Traversing means walking through voyager's prepared tree
@@ -101,7 +110,6 @@ func O_NON_CALENDAR() TraverseOption {
 	return func(o *traverseConfig) { o.includeNonCalendarNodes = true }
 }
 
-// Traverse traverses the built voyager tree in the given direction
 func (v *Voyager) Traverse(cb func(w Waypoint), opts ...TraverseOption) error {
 	config := defaultTraverseConfig()
 	for _, opt := range opts {
@@ -144,13 +152,13 @@ func (v *Voyager) Traverse(cb func(w Waypoint), opts ...TraverseOption) error {
 	return nil
 }
 
+// Navigate returns the first found Waypoint that matches given time (as a string)
+// E.g. Navigate("yesterday") returns waypoint corresponding to the yesterday's date
 func (v *Voyager) Navigate(to string) (Waypoint, error) {
-	navigateTo, _ := NewParser(
-		AcceptAliases(),
-		AcceptUnixSeconds(),
-		// todo: supported layouts should be known from voyager
-		WithLayouts("2006-01-02"),
-	).ParseTime(to)
+	navigateTo, err := v.timeParser.ParseTime(to)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse `navigateTo' time: %w", err)
+	}
 
 	var found Waypoint
 	if err := v.Traverse(func(w Waypoint) {
@@ -168,3 +176,6 @@ func (v *Voyager) Navigate(to string) (Waypoint, error) {
 
 	return found, nil
 }
+
+// TODO: v.Find that will work similar to v.Navigate but will return ALL waypoints that matches given time
+//       Also we need a method for finding by time.Time, but not a string

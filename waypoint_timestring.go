@@ -35,11 +35,11 @@ func NewWaypointTimeString(v string, layoutArg ...string) *WaypointTimeString {
 	if len(layoutArg) > 0 {
 		w.layout = layoutArg[0]
 	}
-	// TODO: un-hardcode layouts here.
-	p := NewParser(WithLayouts("2006-01-02", "2006-01"))
 
 	var err error
-	w.t, err = p.ParseTimeWithLayout(w.layout, w.timeInput)
+
+	// Default parser is used. Use years.SetDefaults to configure parsing
+	w.t, err = NewParser().ParseTimeWithLayout(w.layout, w.timeInput)
 	if err != nil {
 		w.setNonCalendar()
 	}
