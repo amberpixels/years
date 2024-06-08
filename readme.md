@@ -1,4 +1,4 @@
-# years: Powerful Time-Based Iteration and Navigation in [Go programming language](https://go.dev/)
+# years: Powerful Time-Based Navigation in [Go](https://go.dev/)
 
 ![Years Logo](https://raw.githubusercontent.com/amberpixels/years/main/years.png "Years")
 
@@ -131,7 +131,7 @@ t, _ = years.JustParse("1717852417")
 ### Mutating time
 
 ```go
-    t, _ := time.Parse("now")
+t, _ := time.Parse("now")
 mutatedTime := years.Mutate(&t).TruncateToDay().Time()
 fmt.Println("Mutated time:", mutatedTime)
 ```
