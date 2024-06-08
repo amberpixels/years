@@ -5,18 +5,20 @@ import (
 	"slices"
 )
 
+// Voyager is a wrapper for a waypoint that allows for traversing through it
 type Voyager struct {
 	root Waypoint
 
-	timeParser *Parser
+	// parser is used for parsing time when needed (e.g. when navigating)
+	parser *Parser
 }
 
-func NewVoyager(start Waypoint, parserArg ...*Parser) *Voyager {
-	v := &Voyager{root: start, timeParser: NewParser()}
+func NewVoyager(root Waypoint, parserArg ...*Parser) *Voyager {
+	v := &Voyager{root: root, parser: NewParser()}
 	if len(parserArg) > 0 {
-		v.timeParser = parserArg[0]
+		v.parser = parserArg[0]
 	} else {
-		v.timeParser = NewParser()
+		v.parser = NewParser()
 	}
 
 	return v
@@ -24,7 +26,7 @@ func NewVoyager(start Waypoint, parserArg ...*Parser) *Voyager {
 
 // Traversing means walking through voyager's prepared tree
 
-// TraverseDirection TODO nicer enum-ish
+// TraverseDirection is a direction for traversing (e.g. past or future)
 type TraverseDirection string
 
 const (
@@ -32,18 +34,18 @@ const (
 	TraverseDirectionFuture TraverseDirection = "future"
 )
 
-// TraverseNodes TODO nicer enum-ish
-type TraverseNodes string
+// TraverseNodesMode specifies which type of nodes to traverse (e.g. leaves only or containers only)
+type TraverseNodesMode string
 
 const (
-	TraverseLeavesOnly     TraverseNodes = "leaves_only"
-	TraverseContainersOnly TraverseNodes = "containers_only"
-	TraverseAllNodes       TraverseNodes = "all"
+	TraverseLeavesOnly     TraverseNodesMode = "leaves_only"
+	TraverseContainersOnly TraverseNodesMode = "containers_only"
+	TraverseAllNodes       TraverseNodesMode = "all"
 )
 
 type traverseConfig struct {
 	direction               TraverseDirection
-	nodesMode               TraverseNodes
+	nodesMode               TraverseNodesMode
 	includeNonCalendarNodes bool
 }
 
@@ -110,6 +112,7 @@ func O_NON_CALENDAR() TraverseOption {
 	return func(o *traverseConfig) { o.includeNonCalendarNodes = true }
 }
 
+// Traverse traverses through a given waypoint (all its children recursively)
 func (v *Voyager) Traverse(cb func(w Waypoint), opts ...TraverseOption) error {
 	config := defaultTraverseConfig()
 	for _, opt := range opts {
@@ -155,9 +158,9 @@ func (v *Voyager) Traverse(cb func(w Waypoint), opts ...TraverseOption) error {
 // Navigate returns the first found Waypoint that matches given time (as a string)
 // E.g. Navigate("yesterday") returns waypoint corresponding to the yesterday's date
 func (v *Voyager) Navigate(to string) (Waypoint, error) {
-	navigateTo, err := v.timeParser.ParseTime(to)
+	navigateTo, err := v.parser.Parse("", to)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse `navigateTo' time: %w", err)
+		return nil, fmt.Errorf("could not parse time: %w", err)
 	}
 
 	var found Waypoint
@@ -177,5 +180,27 @@ func (v *Voyager) Navigate(to string) (Waypoint, error) {
 	return found, nil
 }
 
-// TODO: v.Find that will work similar to v.Navigate but will return ALL waypoints that matches given time
-//       Also we need a method for finding by time.Time, but not a string
+// Find returns the all found Waypoints that match given time (as a string)
+// e.g. Find("yesterday") returns all waypoints whose time is in the "yesterday" range
+func (v *Voyager) Find(timeStr string) ([]Waypoint, error) {
+	navigateTo, err := v.parser.Parse("", timeStr)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse time: %w", err)
+	}
+
+	found := make([]Waypoint, 0)
+	if err := v.Traverse(func(w Waypoint) {
+		if found != nil {
+			return
+		}
+
+		if w.Time().Equal(navigateTo) {
+			found = append(found, w)
+			return
+		}
+	}); err != nil {
+		return nil, fmt.Errorf("could not traverse: %w", err)
+	}
+
+	return found, nil
+}

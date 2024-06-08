@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// ParseTime calls ParseTime of a default parser
-func ParseTime(value string) (time.Time, error) {
-	return DefaultParser().ParseTime(value)
+// Parse calls Parse of a default parser
+func Parse(layout string, value string) (time.Time, error) {
+	return DefaultParser().Parse(layout, value)
 }

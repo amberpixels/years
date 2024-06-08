@@ -18,25 +18,230 @@ var _ = Describe("Voyager", func() {
 			now: time.Date(2024, time.March, 05, 14, 30, 59, 0, time.UTC),
 		}
 		years.SetStdClock(mockClock)
+	})
 
-		years.SetDefaults(
-			years.AcceptAliases(), years.AcceptUnixSeconds(),
-			years.WithLayouts(
-				"2006", "Jan", "01",
-				"2006-01", "2006-01-02",
-			),
-		)
+	Context("TimeStringWaypoints", func() {
+		var v *years.Voyager
+
+		Context("traversing Strings with a specific layout", func() {
+			BeforeEach(func() {
+				v = years.NewVoyager(
+					years.WaypointGroupFromStrings([]string{
+						"2024-03-05",
+						"2024-03-06",
+						"2024-04-01",
+						"2024-03-07",
+					}, "2006-01-02"),
+				)
+			})
+
+			It("should traverse it in Future ", func() {
+				identifiers := make([]string, 0)
+				err := v.Traverse(func(w years.Waypoint) {
+					identifiers = append(identifiers, w.Identifier())
+				}, years.O_FUTURE())
+
+				Expect(err).Should(Succeed())
+				Expect(identifiers).To(Equal([]string{
+					"2024-03-05",
+					"2024-03-06",
+					"2024-03-07",
+					"2024-04-01",
+				}))
+			})
+
+			It("should traverse it in Past", func() {
+				identifiers := make([]string, 0)
+				err := v.Traverse(func(w years.Waypoint) {
+					identifiers = append(identifiers, w.Identifier())
+				}, years.O_PAST())
+
+				Expect(err).Should(Succeed())
+				Expect(identifiers).To(Equal([]string{
+					"2024-04-01",
+					"2024-03-07",
+					"2024-03-06",
+					"2024-03-05",
+				}))
+			})
+		})
+
+		Context("traversing Strings with different layouts", func() {
+			BeforeEach(func() {
+				// Extend default options for parser that is used by Voyager
+				years.ExtendParserDefaults(
+					years.WithLayouts("2006-01", "2006-01-02"),
+				)
+
+				v = years.NewVoyager(
+					years.WaypointGroupFromStrings([]string{
+						"2024-03-05",
+						"2024-03-06",
+						"2024-03-07",
+						"2024-04",
+					}),
+				)
+			})
+
+			It("should traverse it in Future ", func() {
+				identifiers := make([]string, 0)
+				err := v.Traverse(func(w years.Waypoint) {
+					identifiers = append(identifiers, w.Identifier())
+				}, years.O_FUTURE())
+
+				Expect(err).Should(Succeed())
+				Expect(identifiers).To(Equal([]string{
+					"2024-03-05",
+					"2024-03-06",
+					"2024-03-07",
+					"2024-04",
+				}))
+			})
+
+			It("should traverse it in Past", func() {
+				identifiers := make([]string, 0)
+				err := v.Traverse(func(w years.Waypoint) {
+					identifiers = append(identifiers, w.Identifier())
+				}, years.O_PAST())
+
+				Expect(err).Should(Succeed())
+				Expect(identifiers).To(Equal([]string{
+					"2024-04",
+					"2024-03-07",
+					"2024-03-06",
+					"2024-03-05",
+				}))
+			})
+		})
+	})
+
+	Context("FileWaypoints", func() {
+		var CalendarPath = filepath.Join(TestDataPath, "by_filetime")
+		var v *years.Voyager
+
+		Context("traversing files by its birth time", func() {
+			BeforeEach(func() {
+				wf, err := years.NewWaypointFile(CalendarPath, func(ts times.Timespec) time.Time {
+					return ts.BirthTime()
+				})
+				Expect(err).To(Succeed())
+
+				v = years.NewVoyager(wf)
+			})
+
+			It("should traverse it in Future / Leaves only", func() {
+				identifiers := make([]string, 0)
+				err := v.Traverse(func(w years.Waypoint) {
+					identifiers = append(identifiers, w.Identifier())
+				}, years.O_FUTURE(), years.O_LEAVES_ONLY())
+
+				Expect(err).Should(Succeed())
+				Expect(identifiers).To(Equal([]string{
+					"internal/testdata/by_filetime/first.txt",
+					"internal/testdata/by_filetime/foobar/second.txt",
+					"internal/testdata/by_filetime/foobar/third.txt",
+				}))
+			})
+
+			It("should traverse it in Past / Containers only", func() {
+				identifiers := make([]string, 0)
+				err := v.Traverse(func(w years.Waypoint) {
+					identifiers = append(identifiers, w.Identifier())
+				}, years.O_PAST(), years.O_CONTAINERS_ONLY())
+
+				Expect(err).Should(Succeed())
+				Expect(identifiers).To(Equal([]string{
+					"internal/testdata/by_filetime/foobar",
+					"internal/testdata/by_filetime",
+				}))
+			})
+
+			It("should traverse it in Future / ALL", func() {
+				identifiers := make([]string, 0)
+				err := v.Traverse(func(w years.Waypoint) {
+					identifiers = append(identifiers, w.Identifier())
+				}, years.O_PAST(), years.O_ALL())
+
+				Expect(err).Should(Succeed())
+				Expect(identifiers).To(Equal([]string{
+					"internal/testdata/by_filetime/foobar/third.txt",
+					"internal/testdata/by_filetime/foobar/second.txt",
+					"internal/testdata/by_filetime/first.txt",
+					"internal/testdata/by_filetime/foobar",
+					"internal/testdata/by_filetime",
+				}))
+			})
+		})
+
+		Context("traversing files by its modification time", func() {
+
+			BeforeEach(func() {
+				wf, err := years.NewWaypointFile(CalendarPath, func(ts times.Timespec) time.Time {
+					return ts.ModTime()
+				})
+				Expect(err).To(Succeed())
+
+				v = years.NewVoyager(wf)
+			})
+
+			It("should traverse it in Future / Leaves only", func() {
+				identifiers := make([]string, 0)
+				err := v.Traverse(func(w years.Waypoint) {
+					identifiers = append(identifiers, w.Identifier())
+				}, years.O_FUTURE(), years.O_LEAVES_ONLY())
+
+				Expect(err).Should(Succeed())
+				Expect(identifiers).To(Equal([]string{
+					"internal/testdata/by_filetime/first.txt",
+					"internal/testdata/by_filetime/foobar/second.txt",
+					"internal/testdata/by_filetime/foobar/third.txt",
+				}))
+			})
+
+			It("should traverse it in Past / Containers only", func() {
+				identifiers := make([]string, 0)
+				err := v.Traverse(func(w years.Waypoint) {
+					identifiers = append(identifiers, w.Identifier())
+				}, years.O_PAST(), years.O_CONTAINERS_ONLY())
+
+				Expect(err).Should(Succeed())
+				Expect(identifiers).To(Equal([]string{
+					"internal/testdata/by_filetime",
+					"internal/testdata/by_filetime/foobar",
+				}))
+			})
+
+			It("should traverse it in Future / ALL", func() {
+				identifiers := make([]string, 0)
+				err := v.Traverse(func(w years.Waypoint) {
+					identifiers = append(identifiers, w.Identifier())
+				}, years.O_PAST(), years.O_ALL())
+
+				Expect(err).Should(Succeed())
+				Expect(identifiers).To(Equal([]string{
+					"internal/testdata/by_filetime",
+					"internal/testdata/by_filetime/foobar",
+					"internal/testdata/by_filetime/foobar/third.txt",
+					"internal/testdata/by_filetime/foobar/second.txt",
+					"internal/testdata/by_filetime/first.txt",
+				}))
+			})
+		})
 	})
 
 	Context("TimeNamedFileWaypoints", func() {
 		Context("Calendar1", func() {
 			const TestCalendarLayout = "2006/Jan/2006-01-02.txt"
+			years.ExtendParserDefaults(
+				years.WithLayouts("2006", "Jan", "2006-01-02"),
+			)
 
 			var CalendarPath = filepath.Join(TestDataPath, "calendar1")
 
 			var wf *years.TimeNamedWaypointFile
 			var v *years.Voyager
 			BeforeEach(func() {
+
 				var err error
 				wf, err = years.NewTimeNamedWaypointFile(CalendarPath, TestCalendarLayout)
 				Expect(err).To(Succeed())
@@ -168,6 +373,10 @@ var _ = Describe("Voyager", func() {
 			var wf *years.TimeNamedWaypointFile
 			var v *years.Voyager
 			BeforeEach(func() {
+				years.ExtendParserDefaults(
+					years.WithLayouts("2006", "Jan", "02 Mon"),
+				)
+
 				var err error
 				wf, err = years.NewTimeNamedWaypointFile(CalendarPath, TestCalendarLayout)
 				Expect(err).To(Succeed())
@@ -368,181 +577,5 @@ var _ = Describe("Voyager", func() {
 				})
 			})
 		})
-	})
-
-	Context("FileWaypoints", func() {
-
-		Context("BirthTime", func() {
-
-			var CalendarPath = filepath.Join(TestDataPath, "by_filetime")
-			var wf *years.WaypointFile
-			var v *years.Voyager
-			BeforeEach(func() {
-				var err error
-				wf, err = years.NewWaypointFile(CalendarPath, func(timeSpec times.Timespec) time.Time {
-					return timeSpec.BirthTime()
-				})
-				Expect(err).To(Succeed())
-
-				v = years.NewVoyager(wf)
-			})
-
-			Context("traversing", func() {
-				It("should traverse it in Future / Leaves only", func() {
-					identifiers := make([]string, 0)
-					err := v.Traverse(func(w years.Waypoint) {
-						identifiers = append(identifiers, w.Identifier())
-					}, years.O_FUTURE(), years.O_LEAVES_ONLY())
-
-					Expect(err).Should(Succeed())
-					Expect(identifiers).To(Equal([]string{
-						"internal/testdata/by_filetime/first.txt",
-						"internal/testdata/by_filetime/foobar/second.txt",
-						"internal/testdata/by_filetime/foobar/third.txt",
-					}))
-				})
-
-				It("should traverse it in Past / Containers only", func() {
-					identifiers := make([]string, 0)
-					err := v.Traverse(func(w years.Waypoint) {
-						identifiers = append(identifiers, w.Identifier())
-					}, years.O_PAST(), years.O_CONTAINERS_ONLY())
-
-					Expect(err).Should(Succeed())
-					Expect(identifiers).To(Equal([]string{
-						"internal/testdata/by_filetime/foobar",
-						"internal/testdata/by_filetime",
-					}))
-				})
-
-				It("should traverse it in Future / ALL", func() {
-					identifiers := make([]string, 0)
-					err := v.Traverse(func(w years.Waypoint) {
-						identifiers = append(identifiers, w.Identifier())
-					}, years.O_PAST(), years.O_ALL())
-
-					Expect(err).Should(Succeed())
-					Expect(identifiers).To(Equal([]string{
-						"internal/testdata/by_filetime/foobar/third.txt",
-						"internal/testdata/by_filetime/foobar/second.txt",
-						"internal/testdata/by_filetime/first.txt",
-						"internal/testdata/by_filetime/foobar",
-						"internal/testdata/by_filetime",
-					}))
-				})
-			})
-		})
-
-		Context("ModTime", func() {
-
-			var CalendarPath = filepath.Join(TestDataPath, "by_filetime")
-			var wf *years.WaypointFile
-			var v *years.Voyager
-			BeforeEach(func() {
-				var err error
-				wf, err = years.NewWaypointFile(CalendarPath, func(timeSpec times.Timespec) time.Time {
-					return timeSpec.ModTime()
-				})
-				Expect(err).To(Succeed())
-
-				v = years.NewVoyager(wf)
-			})
-
-			Context("traversing", func() {
-				It("should traverse it in Future / Leaves only", func() {
-					identifiers := make([]string, 0)
-					err := v.Traverse(func(w years.Waypoint) {
-						identifiers = append(identifiers, w.Identifier())
-					}, years.O_FUTURE(), years.O_LEAVES_ONLY())
-
-					Expect(err).Should(Succeed())
-					Expect(identifiers).To(Equal([]string{
-						"internal/testdata/by_filetime/first.txt",
-						"internal/testdata/by_filetime/foobar/second.txt",
-						"internal/testdata/by_filetime/foobar/third.txt",
-					}))
-				})
-
-				It("should traverse it in Past / Containers only", func() {
-					identifiers := make([]string, 0)
-					err := v.Traverse(func(w years.Waypoint) {
-						identifiers = append(identifiers, w.Identifier())
-					}, years.O_PAST(), years.O_CONTAINERS_ONLY())
-
-					Expect(err).Should(Succeed())
-					Expect(identifiers).To(Equal([]string{
-						"internal/testdata/by_filetime",
-						"internal/testdata/by_filetime/foobar",
-					}))
-				})
-
-				It("should traverse it in Future / ALL", func() {
-					identifiers := make([]string, 0)
-					err := v.Traverse(func(w years.Waypoint) {
-						identifiers = append(identifiers, w.Identifier())
-					}, years.O_PAST(), years.O_ALL())
-
-					Expect(err).Should(Succeed())
-					Expect(identifiers).To(Equal([]string{
-						"internal/testdata/by_filetime",
-						"internal/testdata/by_filetime/foobar",
-						"internal/testdata/by_filetime/foobar/third.txt",
-						"internal/testdata/by_filetime/foobar/second.txt",
-						"internal/testdata/by_filetime/first.txt",
-					}))
-				})
-			})
-		})
-	})
-
-	Context("TimeStringWaypoints", func() {
-
-		var ws []years.Waypoint
-		var v *years.Voyager
-		BeforeEach(func() {
-			ws = []years.Waypoint{
-				years.NewWaypointTimeString("2024-03-05"),
-				years.NewWaypointTimeString("2024-03-06"),
-				years.NewWaypointTimeString("2024-03-07"),
-				years.NewWaypointTimeString("2024-04"),
-			}
-			v = years.NewVoyager(
-				years.NewWaypointGroup("root", ws...),
-			)
-		})
-
-		Context("traversing", func() {
-			It("should traverse it in Future ", func() {
-				identifiers := make([]string, 0)
-				err := v.Traverse(func(w years.Waypoint) {
-					identifiers = append(identifiers, w.Identifier())
-				}, years.O_FUTURE())
-
-				Expect(err).Should(Succeed())
-				Expect(identifiers).To(Equal([]string{
-					"2024-03-05",
-					"2024-03-06",
-					"2024-03-07",
-					"2024-04",
-				}))
-			})
-
-			It("should traverse it in Past", func() {
-				identifiers := make([]string, 0)
-				err := v.Traverse(func(w years.Waypoint) {
-					identifiers = append(identifiers, w.Identifier())
-				}, years.O_PAST())
-
-				Expect(err).Should(Succeed())
-				Expect(identifiers).To(Equal([]string{
-					"2024-04",
-					"2024-03-07",
-					"2024-03-06",
-					"2024-03-05",
-				}))
-			})
-
-		})
-
 	})
 })

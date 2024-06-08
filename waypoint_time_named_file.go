@@ -35,7 +35,6 @@ type TimeNamedWaypointFiles []*TimeNamedWaypointFile
 func (w *TimeNamedWaypointFile) Time() time.Time { return w.t }
 
 func NewTimeNamedWaypointFile(path string, fullLayout string, parentArg ...*TimeNamedWaypointFile) (*TimeNamedWaypointFile, error) {
-
 	stat, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -66,8 +65,8 @@ func NewTimeNamedWaypointFile(path string, fullLayout string, parentArg ...*Time
 	layout = strings.TrimPrefix(layout, string(os.PathSeparator))
 	w.layout = layout
 
-	// Default parser is used. Use years.SetDefaults to configure parsing
-	w.t, err = NewParser().ParseTimeWithLayout(layout, w.timeInput)
+	// Default parser is used. Use years.SetParserDefaults to configure parsing
+	w.t, err = NewParser().Parse(layout, w.timeInput)
 	if err != nil {
 		w.setNonCalendar()
 	} else {

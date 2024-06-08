@@ -11,10 +11,17 @@ import (
 
 var _ = Describe("Parser", func() {
 	Context("Default parser", func() {
+		AfterEach(func() {
+			years.SetParserDefaults(
+				years.AcceptUnixSeconds(),
+				years.AcceptAliases(),
+			)
+		})
+
 		It("should parse Unix timestamp", func() {
 			var timestamp int64 = 1709682885
 
-			parsedTime, err := years.DefaultParser().ParseTime(fmt.Sprintf("%d", 1709682885))
+			parsedTime, err := years.DefaultParser().JustParse(fmt.Sprintf("%d", 1709682885))
 			Expect(err).Should(Succeed())
 
 			Expect(parsedTime).To(be_time.Unix(timestamp))
@@ -24,9 +31,9 @@ var _ = Describe("Parser", func() {
 			timeStr := "2024-03-06"
 			expectedTime, _ := time.Parse(time.DateOnly, timeStr)
 
-			years.SetDefaults(years.WithLayouts(time.DateOnly))
+			years.SetParserDefaults(years.WithLayouts(time.DateOnly))
 
-			parsedTime, err := years.DefaultParser().ParseTime(timeStr)
+			parsedTime, err := years.DefaultParser().JustParse(timeStr)
 			Expect(err).Should(Succeed())
 			Expect(parsedTime).To(Equal(expectedTime))
 		})
@@ -41,15 +48,15 @@ var _ = Describe("Parser", func() {
 				years.AcceptUnixSeconds(),
 			)
 
-			today, err := parser.ParseTime("today")
+			today, err := parser.JustParse("today")
 			Expect(err).Should(Succeed())
 			Expect(today.String()).To(Equal(`2024-03-01 00:00:00 +0000 UTC`))
 
-			yesterday, err := parser.ParseTime("yesterday")
+			yesterday, err := parser.JustParse("yesterday")
 			Expect(err).Should(Succeed())
 			Expect(yesterday.String()).To(Equal(`2024-02-29 00:00:00 +0000 UTC`))
 
-			tomorrow, err := parser.ParseTime("tomorrow")
+			tomorrow, err := parser.JustParse("tomorrow")
 			Expect(err).Should(Succeed())
 			Expect(tomorrow.String()).To(Equal(`2024-03-02 00:00:00 +0000 UTC`))
 		})

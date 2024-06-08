@@ -25,7 +25,7 @@ type Parser struct {
 }
 
 func WithLayouts(layouts ...string) ParserOption {
-	return func(p *Parser) { p.layouts = layouts }
+	return func(p *Parser) { p.layouts = append(p.layouts, layouts...) }
 }
 
 func AcceptUnixSeconds() ParserOption { return func(p *Parser) { p.acceptUnixSeconds = true } }
@@ -49,14 +49,23 @@ func WithCustomClock(c Clock) ParserOption {
 	return func(p *Parser) { p.clock = c }
 }
 
-// defaultOptions are applied to the
-var defaultOptions = []ParserOption{
-	AcceptUnixSeconds(),
-	AcceptAliases(),
+// defaultParserOptions are applied to the
+var defaultParserOptions []ParserOption
+
+func ResetParserDefaults() {
+	SetParserDefaults(
+		AcceptUnixSeconds(),
+		AcceptAliases(),
+	)
 }
 
-func SetDefaults(opts ...ParserOption) { defaultOptions = opts }
-func GetDefaults() []ParserOption      { return defaultOptions }
+func init() { ResetParserDefaults() }
+
+func GetParserDefaults() []ParserOption      { return defaultParserOptions }
+func SetParserDefaults(opts ...ParserOption) { defaultParserOptions = opts }
+func ExtendParserDefaults(opts ...ParserOption) {
+	defaultParserOptions = append(defaultParserOptions, opts...)
+}
 
 func NewParser(options ...ParserOption) *Parser {
 	p := &Parser{
@@ -65,7 +74,7 @@ func NewParser(options ...ParserOption) *Parser {
 	}
 
 	if len(options) == 0 {
-		options = defaultOptions
+		options = defaultParserOptions
 	}
 
 	for _, opt := range options {
@@ -76,10 +85,11 @@ func NewParser(options ...ParserOption) *Parser {
 }
 
 var DefaultParser = func() *Parser {
-	return NewParser(defaultOptions...)
+	return NewParser(defaultParserOptions...)
 }
 
-func (p *Parser) ParseTimestamp(value string) (time.Time, error) {
+// ParseAsTimestamp parses given string as a timestamp (seconds/milliseconds/microseconds/nanoseconds)
+func (p *Parser) ParseAsTimestamp(value string) (time.Time, error) {
 	unixDigits, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
 		return time.Time{}, err
@@ -100,9 +110,8 @@ func (p *Parser) ParseTimestamp(value string) (time.Time, error) {
 	return time.Unix(0, unixDigits), nil
 }
 
-// ParseTimeWithLayout parses time from given value using given layout (or using all accepted layouts if layout is empty)
-func (p *Parser) ParseTimeWithLayout(layout string, value string) (time.Time, error) {
-
+// Parse parses time from given value using given layout (or using all parser's accepted layouts if layout is empty)
+func (p *Parser) Parse(layout string, value string) (time.Time, error) {
 	// Try to parse time using all accepted layouts
 	layouts := p.layouts
 	var strictLayout bool
@@ -138,7 +147,7 @@ func (p *Parser) ParseTimeWithLayout(layout string, value string) (time.Time, er
 			cleanValue = strings.TrimPrefix(cleanValue, beforeTimestamp)
 			cleanValue = strings.TrimSuffix(cleanValue, afterTimestamp)
 
-			if t, err := p.ParseTimestamp(cleanValue); err == nil {
+			if t, err := p.ParseAsTimestamp(cleanValue); err == nil {
 				return t, nil
 			} else if strictLayout {
 				return time.Time{}, fmt.Errorf("failed to parse time with layout(%s): %w", l, err)
@@ -150,7 +159,7 @@ func (p *Parser) ParseTimeWithLayout(layout string, value string) (time.Time, er
 
 	// then try to parse as unix timestamp
 	if p.acceptUnixSeconds || p.acceptUnixMilli || p.acceptUnixMicro || p.acceptUnixNano {
-		if t, err := p.ParseTimestamp(value); err == nil {
+		if t, err := p.ParseAsTimestamp(value); err == nil {
 			return t, nil
 		}
 	}
@@ -166,7 +175,7 @@ func (p *Parser) ParseTimeWithLayout(layout string, value string) (time.Time, er
 	return time.Time{}, errors.New("unable to parse time")
 }
 
-// ParseTime is a shortcut for ParseTimeLayout("", value) (so all layouts are accepted)
-func (p *Parser) ParseTime(value string) (time.Time, error) {
-	return p.ParseTimeWithLayout("", value)
+// JustParse is a shortcut for Parse("", value) (so using all parser's accepted layouts)
+func (p *Parser) JustParse(value string) (time.Time, error) {
+	return p.Parse("", value)
 }
