@@ -137,7 +137,7 @@ fmt.Println("Mutated time:", mutatedTime)
 ```
 
 ## Contributing
-`Be` welcomes contributions! Feel free to open issues, suggest improvements, or submit pull
+`years` welcomes contributions! Feel free to open issues, suggest improvements, or submit pull
 requests. [Contribution guidelines for this project](CONTRIBUTING.md)
 
 ## License
