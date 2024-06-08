@@ -2,6 +2,8 @@
 
 ![Years Logo](https://raw.githubusercontent.com/amberpixels/years/main/years.png "Years")
 
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/amberpixels/years/blob/main/LICENSE)
+
 `years` is a Golang library designed for time-based sorting and iterating over things. <br>
 `years` allows you to build powerful tools for navigating through time-based data structures (calendars files, logs
 etc).<br> Also it's yet another time parser for Go as well.
@@ -134,3 +136,12 @@ mutatedTime := years.Mutate(&t).TruncateToDay().Time()
 fmt.Println("Mutated time:", mutatedTime)
 ```
 
+## Contributing
+`Be` welcomes contributions! Feel free to open issues, suggest improvements, or submit pull
+requests. [Contribution guidelines for this project](CONTRIBUTING.md)
+
+## License
+This project is [licensed under the MIT License](LICENSE).
+
+## Contact
+For any questions or issues, feel free to open an issue on the GitHub repository or contact the maintainer at eugene@amberpixels.io
