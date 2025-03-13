@@ -3,6 +3,7 @@ package years
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 	"time"
@@ -39,9 +40,7 @@ func AcceptAliases() ParserOption {
 
 func WithCustomAliases(customAliases map[string]func(time.Time) time.Time) ParserOption {
 	return func(p *Parser) {
-		for k, v := range customAliases {
-			p.aliases[k] = v
-		}
+		maps.Copy(customAliases, p.aliases)
 	}
 }
 
