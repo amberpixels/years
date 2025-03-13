@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// TimeNamedWaypointFile is a Waypoint implementation for files/directories
+// TimeNamedWaypointFile is a Waypoint implementation for files/directories.
 type TimeNamedWaypointFile struct {
 	*WaypointFile
 
@@ -34,7 +34,10 @@ type TimeNamedWaypointFiles []*TimeNamedWaypointFile
 
 func (w *TimeNamedWaypointFile) Time() time.Time { return w.t }
 
-func NewTimeNamedWaypointFile(path string, fullLayout string, parentArg ...*TimeNamedWaypointFile) (*TimeNamedWaypointFile, error) {
+func NewTimeNamedWaypointFile(
+	path string, fullLayout string,
+	parentArg ...*TimeNamedWaypointFile,
+) (*TimeNamedWaypointFile, error) {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -75,7 +78,6 @@ func NewTimeNamedWaypointFile(path string, fullLayout string, parentArg ...*Time
 	}
 
 	if w.fileInfo.IsDir() {
-
 		// Go deeper in the directory
 		innerPaths, err := filepath.Glob(filepath.Join(w.path, "*"))
 		if err != nil {

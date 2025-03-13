@@ -2,21 +2,19 @@ package years
 
 import (
 	"fmt"
-	"github.com/djherbis/times"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/djherbis/times"
 )
 
-// WaypointFile is a Waypoint implementation for files/directories
+// WaypointFile is a Waypoint implementation for files/directories.
 type WaypointFile struct {
 	// Path of the waypoint
 	// It's the request field for .prepare() to be called
 	path string
-
-	// timeGetter is a function that returns time of the waypoint based on file time spec
-	timeGetter func(timeSpec times.Timespec) time.Time
 
 	// fileInfo holds the file info for the given file
 	fileInfo os.FileInfo
@@ -26,9 +24,6 @@ type WaypointFile struct {
 
 	// t is the time of the waypoint
 	t time.Time
-
-	// IsRoot is a boolean flag stating for a root waypoint
-	isRoot bool
 
 	// Waypoints are inner children (subdirectories, files, etc)
 	waypoints []Waypoint

@@ -5,11 +5,11 @@ import (
 	"slices"
 )
 
-// Voyager is a wrapper for a waypoint that allows for traversing through it
+// Voyager is a wrapper for a waypoint that allows for traversing through it.
 type Voyager struct {
 	root Waypoint
 
-	// parser is used for parsing time when needed (e.g. when navigating)
+	// parser is used for parsing time when needed (e.g. when navigating).
 	parser *Parser
 }
 
@@ -24,9 +24,9 @@ func NewVoyager(root Waypoint, parserArg ...*Parser) *Voyager {
 	return v
 }
 
-// Traversing means walking through voyager's prepared tree
+// Traversing means walking through voyager's prepared tree.
 
-// TraverseDirection is a direction for traversing (e.g. past or future)
+// TraverseDirection is a direction for traversing (e.g. past or future).
 type TraverseDirection string
 
 const (
@@ -34,7 +34,7 @@ const (
 	TraverseDirectionFuture TraverseDirection = "future"
 )
 
-// TraverseNodesMode specifies which type of nodes to traverse (e.g. leaves only or containers only)
+// TraverseNodesMode specifies which type of nodes to traverse (e.g. leaves only or containers only).
 type TraverseNodesMode string
 
 const (
@@ -49,7 +49,7 @@ type traverseConfig struct {
 	includeNonCalendarNodes bool
 }
 
-// defaultTraverseConfig is Future->Past + all type of nodes
+// defaultTraverseConfig is Future->Past + all type of nodes.
 func defaultTraverseConfig() traverseConfig {
 	return traverseConfig{
 		direction: TraverseDirectionPast,
@@ -57,7 +57,7 @@ func defaultTraverseConfig() traverseConfig {
 	}
 }
 
-// isTraversable checks if a given waypoint is traversable corresponding to config
+// isTraversable checks if a given waypoint is traversable corresponding to config.
 func (config *traverseConfig) isTraversable(waypoint Waypoint) bool {
 	if waypoint.Time().IsZero() && !config.includeNonCalendarNodes {
 		return false
@@ -72,47 +72,55 @@ func (config *traverseConfig) isTraversable(waypoint Waypoint) bool {
 		return true
 	}
 	okContainersOnly := config.nodesMode == TraverseContainersOnly && waypoint.IsContainer()
-	if okContainersOnly {
-		return true
-	}
-
-	return false
+	return okContainersOnly
 }
 
-// TraverseOption defines functional options for the Traverse function
+// TraverseOption defines functional options for the Traverse function.
 type TraverseOption func(*traverseConfig)
 
-// O_PAST returns a TraverseOption for traversing in Past direction
+// O_PAST returns a TraverseOption for traversing in Past direction.
+//
+//nolint:revive,stylecheck // ok
 func O_PAST() TraverseOption {
 	return func(o *traverseConfig) { o.direction = TraverseDirectionPast }
 }
 
-// O_FUTURE returns a TraverseOption for traversing in Future direction
+// O_FUTURE returns a TraverseOption for traversing in Future direction.
+//
+//nolint:revive,stylecheck // ok
 func O_FUTURE() TraverseOption {
 	return func(o *traverseConfig) { o.direction = TraverseDirectionFuture }
 }
 
-// O_LEAVES_ONLY returns a TraverseOption for traversing only leaf nodes
+// O_LEAVES_ONLY returns a TraverseOption for traversing only leaf nodes.
+//
+//nolint:revive,stylecheck // ok
 func O_LEAVES_ONLY() TraverseOption {
 	return func(o *traverseConfig) { o.nodesMode = TraverseLeavesOnly }
 }
 
-// O_CONTAINERS_ONLY returns a TraverseOption for traversing only container nodes
+// O_CONTAINERS_ONLY returns a TraverseOption for traversing only container nodes.
+//
+//nolint:revive,stylecheck // ok
 func O_CONTAINERS_ONLY() TraverseOption {
 	return func(o *traverseConfig) { o.nodesMode = TraverseContainersOnly }
 }
 
-// O_ALL returns a TraverseOption for traversing all nodes
+// O_ALL returns a TraverseOption for traversing all nodes.
+//
+//nolint:revive,stylecheck // ok
 func O_ALL() TraverseOption {
 	return func(o *traverseConfig) { o.nodesMode = TraverseAllNodes }
 }
 
-// O_NON_CALENDAR returns a TraverseOption for including non calendar nodes
+// O_NON_CALENDAR returns a TraverseOption for including non calendar nodes.
+//
+//nolint:revive,stylecheck // ok
 func O_NON_CALENDAR() TraverseOption {
 	return func(o *traverseConfig) { o.includeNonCalendarNodes = true }
 }
 
-// Traverse traverses through a given waypoint (all its children recursively)
+// Traverse traverses through a given waypoint (all its children recursively).
 func (v *Voyager) Traverse(cb func(w Waypoint), opts ...TraverseOption) error {
 	config := defaultTraverseConfig()
 	for _, opt := range opts {
@@ -155,8 +163,8 @@ func (v *Voyager) Traverse(cb func(w Waypoint), opts ...TraverseOption) error {
 	return nil
 }
 
-// Navigate returns the first found Waypoint that matches given time (as a string)
-// E.g. Navigate("yesterday") returns waypoint corresponding to the yesterday's date
+// Navigate returns the first found Waypoint that matches given time (as a string).
+// E.g. Navigate("yesterday") returns waypoint corresponding to the yesterday's date.
 func (v *Voyager) Navigate(to string) (Waypoint, error) {
 	navigateTo, err := v.parser.Parse("", to)
 	if err != nil {
@@ -181,7 +189,7 @@ func (v *Voyager) Navigate(to string) (Waypoint, error) {
 }
 
 // Find returns the all found Waypoints that match given time (as a string)
-// e.g. Find("yesterday") returns all waypoints whose time is in the "yesterday" range
+// e.g. Find("yesterday") returns all waypoints whose time is in the "yesterday" range.
 func (v *Voyager) Find(timeStr string) ([]Waypoint, error) {
 	navigateTo, err := v.parser.Parse("", timeStr)
 	if err != nil {

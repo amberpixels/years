@@ -2,16 +2,17 @@ package years
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 )
 
-// DateUnit stays for the unit of a date like Day/Month/Year/etc
+// DateUnit stays for the unit of a date like Day/Month/Year/etc.
 type DateUnit int
 
 const (
 	UnitUndefined DateUnit = iota
 	// Day as day of the month
-	// TODO(nice-to-have) support day of the week + day of the year
+	// TODO(nice-to-have) support day of the week + day of the year.
 	Day  DateUnit = 1 << (iota - 1)
 	Week          // not supported yet
 	Month
@@ -19,7 +20,7 @@ const (
 	Year
 
 	// UnixSecond as well as UnixMillisecond, UnixMicrosecond, UnixNanosecond
-	// are special units for Unix timestamps
+	// are special units for Unix timestamps.
 	UnixSecond
 	UnixMillisecond
 	UnixMicrosecond
@@ -35,6 +36,8 @@ func (du DateUnit) String() string {
 		return "day"
 	case Month:
 		return "month"
+	case Week, Quarter:
+		panic("not-implemented") // todo
 	case Year:
 		return "year"
 	case UnixSecond:
@@ -52,7 +55,9 @@ func (du DateUnit) String() string {
 
 func (du DateUnit) Defined() bool { return du != UnitUndefined }
 
-// DateUnitsDict holds all available DateUnits
+// DateUnitsDict holds all available DateUnits.
+//
+//nolint:gochecknoglobals // it's ok
 var DateUnitsDict = struct {
 	Day   DateUnit
 	Month DateUnit
@@ -79,12 +84,12 @@ type LayoutFormat int
 
 const (
 	LayoutFormatUndefined LayoutFormat = iota
-	// LayoutFormatGo is a format that is supported by Go time.Parse
+	// LayoutFormatGo is a format that is supported by Go time.Parse.
 	LayoutFormatGo = 1 << (iota - 1)
-	// LayoutFormatUnixTimestamp is a format that parses time from Unix timestamp (seconds or milliseconds)
+	// LayoutFormatUnixTimestamp is a format that parses time from Unix timestamp (seconds or milliseconds).
 	LayoutFormatUnixTimestamp
 
-	// TODO(nice-to-have): support more formats, e.g. JS-like formats (YYYY, etc)
+	// TODO(nice-to-have): support more formats, e.g. JS-like formats (YYYY, etc).
 )
 
 func (lf LayoutFormat) String() string {
@@ -93,12 +98,16 @@ func (lf LayoutFormat) String() string {
 		return "go"
 	case LayoutFormatUnixTimestamp:
 		return "unix_timestamp"
+	case LayoutFormatUndefined:
+		fallthrough
 	default:
 		panic("fix LayoutFormat enum!")
 	}
 }
 
-// LayoutFormatDict holds all available LayoutFormats
+// LayoutFormatDict holds all available LayoutFormats.
+//
+//nolint:gochecknoglobals // it's ok
 var LayoutFormatDict = struct {
 	GoFormat      LayoutFormat
 	UnixTimestamp LayoutFormat
@@ -114,8 +123,8 @@ const (
 	LayoutTimestampNanoseconds  = "U@000000000"
 )
 
-// LayoutDetails stores parsed meta information about given layout string
-// e.g. "2006-02-01"
+// LayoutDetails stores parsed meta information about given layout string.
+// e.g. "2006-02-01".
 type LayoutDetails struct {
 	// MinimalUnit e.g. Day for "2006-01-02" and Month for "2006-01"
 	MinimalUnit DateUnit
@@ -128,16 +137,10 @@ type LayoutDetails struct {
 }
 
 func (lm *LayoutDetails) HasUnit(q DateUnit) bool {
-	for _, u := range lm.Units {
-		if u == q {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(lm.Units, q)
 }
 
-// Note: it's a pretty hacky/weak function, but we're OK with it for now
+// Note: it's a pretty hacky/weak function, but we're OK with it for now.
 func ParseLayout(layout string) *LayoutDetails {
 	result := &LayoutDetails{Units: make([]DateUnit, 0)}
 
@@ -146,7 +149,10 @@ func ParseLayout(layout string) *LayoutDetails {
 	// TODO: stronger check: 2 should not be part of 2006
 	//       also `_2` should not be confused with __2
 	twoNotFollowedByZero := regexp.MustCompile(`2([^0]|$)`)
-	containsDay := strings.Contains(layout, "_2") || strings.Contains(layout, "02") || twoNotFollowedByZero.MatchString(layout)
+	containsDay :=
+		strings.Contains(layout, "_2") || strings.Contains(layout, "02") ||
+			twoNotFollowedByZero.MatchString(layout)
+
 	if containsDay {
 		result.MinimalUnit = Day
 		result.Units = append(result.Units, Day)
@@ -158,7 +164,11 @@ func ParseLayout(layout string) *LayoutDetails {
 
 	// Month: "Jan" "January" "01" "1"
 	oneNotFollowedByFive := regexp.MustCompile(`0?1([^5]|$)`) // `1` is month but `15` are hours
-	containsMonth := strings.Contains(layout, "01") || strings.Contains(layout, "Jan") || oneNotFollowedByFive.MatchString(layout)
+	containsMonth :=
+		strings.Contains(layout, "01") ||
+			strings.Contains(layout, "Jan") ||
+			oneNotFollowedByFive.MatchString(layout)
+
 	if containsMonth {
 		if !result.MinimalUnit.Defined() {
 			result.MinimalUnit = Month
@@ -178,16 +188,17 @@ func ParseLayout(layout string) *LayoutDetails {
 	if strings.Contains(layout, LayoutTimestampSeconds) {
 		result.Format = LayoutFormatUnixTimestamp
 
-		if strings.Contains(layout, LayoutTimestampNanoseconds) {
+		switch {
+		case strings.Contains(layout, LayoutTimestampNanoseconds):
 			result.Units = append(result.Units, UnixNanosecond)
 			result.MinimalUnit = UnixNanosecond
-		} else if strings.Contains(layout, LayoutTimestampMicroseconds) {
+		case strings.Contains(layout, LayoutTimestampMicroseconds):
 			result.Units = append(result.Units, UnixMicrosecond)
 			result.MinimalUnit = UnixMicrosecond
-		} else if strings.Contains(layout, LayoutTimestampMilliseconds) {
+		case strings.Contains(layout, LayoutTimestampMilliseconds):
 			result.Units = append(result.Units, UnixMillisecond)
 			result.MinimalUnit = UnixMillisecond
-		} else {
+		default:
 			result.Units = append(result.Units, UnixSecond)
 			result.MinimalUnit = UnixSecond
 		}
@@ -205,14 +216,15 @@ func ParseLayout(layout string) *LayoutDetails {
 	return result
 }
 
-// find position (start,end) of the timestamp part in the layout (e.g. `U0.` or `U0.000` etc )
-// e.g. `FileName_U0.txt` -> [10, 13]
-func findTimestampPart(layout string) (start, end int) {
+// find position (start,end) of the timestamp part in the layout (e.g. `U0.` or `U0.000` etc ).
+// e.g. `FileName_U0.txt` -> [10, 13].
+func findTimestampPart(layout string) (int, int) {
 	if !strings.Contains(layout, LayoutTimestampSeconds) {
 		return 0, 0
 	}
 
-	switch true {
+	var start, end int
+	switch {
 	case strings.Contains(layout, LayoutTimestampNanoseconds):
 		start = strings.Index(layout, LayoutTimestampNanoseconds)
 		end = start + len(LayoutTimestampNanoseconds)
@@ -223,5 +235,6 @@ func findTimestampPart(layout string) (start, end int) {
 		start = strings.Index(layout, LayoutTimestampMilliseconds)
 		end = start + len(LayoutTimestampMilliseconds)
 	}
-	return
+
+	return start, end
 }

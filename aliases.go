@@ -2,11 +2,18 @@ package years
 
 import "time"
 
+const (
+	daysInWeek = 7
+)
+
 // coreAliases holds all registered aliases
 // Aliases that are timezone-dependent by default use timezone of given base time
 //
 // TODO(nice-to-have): allow to change Sunday/Monday week start via configuration
-// TODO(nice-to-have): refactor keys are not just hardcoded strings, but should be language-depended, so they can be translated.
+// TODO(nice-to-have): refactor keys are not just hardcoded strings,
+// but should be language-depended, so they can be translated.
+//
+//nolint:gochecknoglobals // it's ok
 var coreAliases = map[string]func(time.Time) time.Time{
 	"today": func(base time.Time) time.Time {
 		return Mutate(&base).TruncateToDay().Time()
@@ -24,11 +31,11 @@ var coreAliases = map[string]func(time.Time) time.Time{
 		return Mutate(&startOfWeek).TruncateToDay().Time()
 	},
 	"last-week": func(base time.Time) time.Time {
-		startOfLastWeek := base.AddDate(0, 0, -7-int(base.Weekday()))
+		startOfLastWeek := base.AddDate(0, 0, -daysInWeek-int(base.Weekday()))
 		return Mutate(&startOfLastWeek).TruncateToDay().Time()
 	},
 	"next-week": func(base time.Time) time.Time {
-		startOfNextWeek := base.AddDate(0, 0, 7-int(base.Weekday()))
+		startOfNextWeek := base.AddDate(0, 0, daysInWeek-int(base.Weekday()))
 		return Mutate(&startOfNextWeek).TruncateToDay().Time()
 	},
 	// to avoid misunderstanding we deliberately do not have `this-weekend` alias

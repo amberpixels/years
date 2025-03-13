@@ -1,12 +1,13 @@
 package years_test
 
 import (
-	"github.com/amberpixels/years"
-	"github.com/djherbis/times"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"path/filepath"
 	"time"
+
+	"github.com/amberpixels/years"
+	"github.com/djherbis/times"
+	. "github.com/onsi/ginkgo/v2" //nolint: revive // gomega is fine
+	. "github.com/onsi/gomega"    //nolint: revive // gomega is fine
 )
 
 var _ = Describe("Voyager", func() {

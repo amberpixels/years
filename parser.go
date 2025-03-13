@@ -45,11 +45,14 @@ func WithCustomAliases(customAliases map[string]func(time.Time) time.Time) Parse
 	}
 }
 
+// WithCustomClock opts to enable a custom Clock.
 func WithCustomClock(c Clock) ParserOption {
 	return func(p *Parser) { p.clock = c }
 }
 
-// defaultParserOptions are applied to the
+// defaultParserOptions are applied always by default.
+//
+//nolint:gochecknoglobals // it's ok
 var defaultParserOptions []ParserOption
 
 func ResetParserDefaults() {
@@ -59,6 +62,7 @@ func ResetParserDefaults() {
 	)
 }
 
+//nolint:gochecknoinits // we're fine for now
 func init() { ResetParserDefaults() }
 
 func GetParserDefaults() []ParserOption      { return defaultParserOptions }
@@ -84,18 +88,22 @@ func NewParser(options ...ParserOption) *Parser {
 	return p
 }
 
+// DefaultParsers makes a default parser
+//
+//nolint:gochecknoglobals // it's ok
 var DefaultParser = func() *Parser {
 	return NewParser(defaultParserOptions...)
 }
 
-// ParseAsTimestamp parses given string as a timestamp (seconds/milliseconds/microseconds/nanoseconds)
+// ParseAsTimestamp parses given string as a timestamp:
+// seconds/milliseconds/microseconds/nanoseconds.
 func (p *Parser) ParseAsTimestamp(value string) (time.Time, error) {
 	unixDigits, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	switch true {
+	switch {
 	case p.acceptUnixSeconds:
 		return time.Unix(unixDigits, 0), nil
 	case p.acceptUnixMilli:
@@ -105,12 +113,13 @@ func (p *Parser) ParseAsTimestamp(value string) (time.Time, error) {
 	case p.acceptUnixNano:
 		unixDigits *= int64(time.Nanosecond)
 	}
-	// TODO(nice-to-have): add more validation here (e.g. check if len of digits is reasonable for milli/micro/nano)
+	// TODO(nice-to-have): add more validation here:
+	// e.g. check if len of digits is reasonable for milli/micro/nano.
 
 	return time.Unix(0, unixDigits), nil
 }
 
-// Parse parses time from given value using given layout (or using all parser's accepted layouts if layout is empty)
+// Parse parses time from given value using given layout (or using all parser's accepted layouts if layout is empty).
 func (p *Parser) Parse(layout string, value string) (time.Time, error) {
 	// Try to parse time using all accepted layouts
 	layouts := p.layouts
@@ -152,6 +161,8 @@ func (p *Parser) Parse(layout string, value string) (time.Time, error) {
 			} else if strictLayout {
 				return time.Time{}, fmt.Errorf("failed to parse time with layout(%s): %w", l, err)
 			}
+		case LayoutFormatUndefined:
+			fallthrough
 		default:
 			return time.Time{}, fmt.Errorf("unknown layout format: %s", l)
 		}
@@ -175,7 +186,7 @@ func (p *Parser) Parse(layout string, value string) (time.Time, error) {
 	return time.Time{}, errors.New("unable to parse time")
 }
 
-// JustParse is a shortcut for Parse("", value) (so using all parser's accepted layouts)
+// JustParse is a shortcut for Parse("", value) (so using all parser's accepted layouts).
 func (p *Parser) JustParse(value string) (time.Time, error) {
 	return p.Parse("", value)
 }

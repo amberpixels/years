@@ -20,7 +20,7 @@ type Waypoint interface {
 	Children() []Waypoint
 }
 
-// AllChildren is a helper function that gets ALL children of a waypoint (recursively)
+// AllChildren is a helper function that gets ALL children of a waypoint (recursively).
 func AllChildren(w Waypoint) []Waypoint {
 	var result []Waypoint
 	if w.IsContainer() {

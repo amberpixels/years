@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// WaypointString is a Waypoint implementation for a string that represents time
+// WaypointString is a Waypoint implementation for a string that represents time.
 type WaypointString struct {
 	// timeInput is the full input that is using for time.Parse()
 	timeInput string
