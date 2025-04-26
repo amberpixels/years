@@ -94,17 +94,12 @@ var DefaultParser = func() *Parser {
 	return NewParser(defaultParserOptions...)
 }
 
-// ParseAsTimestamp parses given string as a timestamp:
-// seconds/milliseconds/microseconds/nanoseconds.
-func (p *Parser) ParseAsTimestamp(value string) (time.Time, error) {
-	unixDigits, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		return time.Time{}, err
-	}
-
+// DigitsAsTimestamp converts given int64 as a time.Time,
+// considering input as seconds/milliseconds/microseconds/nanoseconds.
+func (p *Parser) DigitsAsTimestamp(unixDigits int64) time.Time {
 	switch {
 	case p.acceptUnixSeconds:
-		return time.Unix(unixDigits, 0), nil
+		return time.Unix(unixDigits, 0)
 	case p.acceptUnixMilli:
 		unixDigits *= int64(time.Millisecond)
 	case p.acceptUnixMicro:
@@ -112,14 +107,29 @@ func (p *Parser) ParseAsTimestamp(value string) (time.Time, error) {
 	case p.acceptUnixNano:
 		unixDigits *= int64(time.Nanosecond)
 	}
+
 	// TODO(nice-to-have): add more validation here:
 	// e.g. check if len of digits is reasonable for milli/micro/nano.
 
-	return time.Unix(0, unixDigits), nil
+	return time.Unix(0, unixDigits)
 }
 
 // Parse parses time from given value using given layout (or using all parser's accepted layouts if layout is empty).
 func (p *Parser) Parse(layout string, value string) (time.Time, error) {
+	// Shorthand: if possible, try to parse as a numeric timestamp:
+	digits, parseIntErr := strconv.ParseInt(value, 10, 64)
+	isNumericValue := parseIntErr == nil
+
+	if isNumericValue {
+		if p.acceptUnixSeconds || p.acceptUnixMilli || p.acceptUnixMicro || p.acceptUnixNano {
+			return p.DigitsAsTimestamp(digits), nil
+		}
+
+		if len(p.layouts) == 0 {
+			return time.Time{}, errors.New("misconfiguration")
+		}
+	}
+
 	// Try to parse time using all accepted layouts
 	layouts := p.layouts
 	var strictLayout bool
@@ -155,8 +165,9 @@ func (p *Parser) Parse(layout string, value string) (time.Time, error) {
 			cleanValue = strings.TrimPrefix(cleanValue, beforeTimestamp)
 			cleanValue = strings.TrimSuffix(cleanValue, afterTimestamp)
 
-			if t, err := p.ParseAsTimestamp(cleanValue); err == nil {
-				return t, nil
+			cleanDigits, err := strconv.ParseInt(cleanValue, 10, 64)
+			if err == nil {
+				return p.DigitsAsTimestamp(cleanDigits), nil
 			} else if strictLayout {
 				return time.Time{}, fmt.Errorf("failed to parse time with layout(%s): %w", l, err)
 			}
@@ -164,13 +175,6 @@ func (p *Parser) Parse(layout string, value string) (time.Time, error) {
 			fallthrough
 		default:
 			return time.Time{}, fmt.Errorf("unknown layout format: %s", l)
-		}
-	}
-
-	// then try to parse as unix timestamp
-	if p.acceptUnixSeconds || p.acceptUnixMilli || p.acceptUnixMicro || p.acceptUnixNano {
-		if t, err := p.ParseAsTimestamp(value); err == nil {
-			return t, nil
 		}
 	}
 
