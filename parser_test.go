@@ -22,7 +22,7 @@ var _ = Describe("Parser", func() {
 		It("should parse Unix timestamp", func() {
 			var timestamp int64 = 1709682885
 
-			parsedTime, err := years.DefaultParser().JustParse(strconv.Itoa(1709682885))
+			parsedTime, err := years.DefaultParser().JustParse(strconv.Itoa(int(timestamp)))
 			Expect(err).Should(Succeed())
 
 			Expect(parsedTime).To(be_time.Unix(timestamp))
