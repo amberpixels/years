@@ -2,7 +2,7 @@ package years
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -60,7 +60,7 @@ func NewWaypointFile(path string, timeGetter func(timeSpec times.Timespec) time.
 			child, err := NewWaypointFile(innerPath, timeGetter)
 			if err != nil {
 				// TODO(nice-to-have): add configurable way to halt on child error, to log/omit errors, etc
-				log.Printf("child: NewWaypointFile(%s) failed: %s\n", innerPath, err)
+				slog.Info(fmt.Sprintf("child: NewWaypointFile(%s) failed: %s\n", innerPath, err))
 				continue
 			}
 

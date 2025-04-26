@@ -351,14 +351,20 @@ var _ = Describe("Voyager", func() {
 					navigated, err := v.Navigate("2024-03-06")
 					Expect(err).Should(Succeed())
 					Expect(navigated).NotTo(BeNil())
-					Expect(navigated.Identifier()).To(Equal(filepath.Join(CalendarPath, "2024", "Mar", "2024-03-06.txt")))
+					Expect(
+						navigated.Identifier(),
+					).To(
+						Equal(filepath.Join(CalendarPath, "2024", "Mar", "2024-03-06.txt")),
+					)
 				})
 
 				It("should navigate to today", func() {
 					navigated, err := v.Navigate("today")
 					Expect(err).Should(Succeed())
 					Expect(navigated).NotTo(BeNil())
-					Expect(navigated.Identifier()).To(Equal(filepath.Join(CalendarPath, "2024", "Mar", "2024-03-05.txt")))
+					Expect(
+						navigated.Identifier(),
+					).To(Equal(filepath.Join(CalendarPath, "2024", "Mar", "2024-03-05.txt")))
 				})
 			})
 		})

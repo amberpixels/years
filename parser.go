@@ -87,7 +87,7 @@ func NewParser(options ...ParserOption) *Parser {
 	return p
 }
 
-// DefaultParsers makes a default parser
+// DefaultParser makes a default parser
 //
 //nolint:gochecknoglobals // it's ok
 var DefaultParser = func() *Parser {

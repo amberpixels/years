@@ -140,6 +140,8 @@ func (lm *LayoutDetails) HasUnit(q DateUnit) bool {
 	return slices.Contains(lm.Units, q)
 }
 
+// ParseLayout parses given layout string and returns LayoutDetails.
+//
 // Note: it's a pretty hacky/weak function, but we're OK with it for now.
 func ParseLayout(layout string) *LayoutDetails {
 	result := &LayoutDetails{Units: make([]DateUnit, 0)}

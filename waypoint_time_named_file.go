@@ -1,7 +1,8 @@
 package years
 
 import (
-	"log"
+	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -88,7 +89,7 @@ func NewTimeNamedWaypointFile(
 			child, err := NewTimeNamedWaypointFile(innerPath, fullLayout, w)
 			if err != nil {
 				// TODO(nice-to-have): add configurable way to halt on child error, to log/omit errors, etc
-				log.Printf("child: NewTimeNamedWaypointFile(%s) failed: %s\n", innerPath, err)
+				slog.Info(fmt.Sprintf("child: NewTimeNamedWaypointFile(%s) failed: %s", innerPath, err))
 				continue
 			}
 

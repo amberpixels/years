@@ -80,42 +80,42 @@ type TraverseOption func(*traverseConfig)
 
 // O_PAST returns a TraverseOption for traversing in Past direction.
 //
-//nolint:revive,stylecheck // ok
+//nolint:revive,stylecheck,staticcheck // ok
 func O_PAST() TraverseOption {
 	return func(o *traverseConfig) { o.direction = TraverseDirectionPast }
 }
 
 // O_FUTURE returns a TraverseOption for traversing in Future direction.
 //
-//nolint:revive,stylecheck // ok
+//nolint:revive,stylecheck,staticcheck // ok
 func O_FUTURE() TraverseOption {
 	return func(o *traverseConfig) { o.direction = TraverseDirectionFuture }
 }
 
 // O_LEAVES_ONLY returns a TraverseOption for traversing only leaf nodes.
 //
-//nolint:revive,stylecheck // ok
+//nolint:revive,stylecheck,staticcheck // ok
 func O_LEAVES_ONLY() TraverseOption {
 	return func(o *traverseConfig) { o.nodesMode = TraverseLeavesOnly }
 }
 
 // O_CONTAINERS_ONLY returns a TraverseOption for traversing only container nodes.
 //
-//nolint:revive,stylecheck // ok
+//nolint:revive,stylecheck,staticcheck // ok
 func O_CONTAINERS_ONLY() TraverseOption {
 	return func(o *traverseConfig) { o.nodesMode = TraverseContainersOnly }
 }
 
 // O_ALL returns a TraverseOption for traversing all nodes.
 //
-//nolint:revive,stylecheck // ok
+//nolint:revive,stylecheck,staticcheck // ok
 func O_ALL() TraverseOption {
 	return func(o *traverseConfig) { o.nodesMode = TraverseAllNodes }
 }
 
 // O_NON_CALENDAR returns a TraverseOption for including non calendar nodes.
 //
-//nolint:revive,stylecheck // ok
+//nolint:revive,stylecheck,staticcheck // ok
 func O_NON_CALENDAR() TraverseOption {
 	return func(o *traverseConfig) { o.includeNonCalendarNodes = true }
 }
@@ -139,7 +139,7 @@ func (v *Voyager) Traverse(cb func(w Waypoint), opts ...TraverseOption) error {
 	}
 
 	sortFn := func(a, b Waypoint) int {
-		if a.Time() == b.Time() {
+		if a.Time().Equal(b.Time()) {
 			return directionSign
 		}
 
