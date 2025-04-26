@@ -94,24 +94,65 @@ var DefaultParser = func() *Parser {
 	return NewParser(defaultParserOptions...)
 }
 
-// DigitsAsTimestamp converts given int64 as a time.Time,
+// ParseEpoch converts the given epoch timestamp int64 as a time.Time,
 // considering input as seconds/milliseconds/microseconds/nanoseconds.
-func (p *Parser) DigitsAsTimestamp(unixDigits int64) time.Time {
-	switch {
-	case p.acceptUnixNano:
-		unixDigits *= int64(time.Nanosecond)
-	case p.acceptUnixMicro:
-		unixDigits *= int64(time.Microsecond)
-	case p.acceptUnixMilli:
-		unixDigits *= int64(time.Millisecond)
-	case p.acceptUnixSeconds:
-		return time.Unix(unixDigits, 0)
+// Better use one specific configuration: seconds or milliseconds, etc.
+// In case if multiple configurations are enabled, there are edge-cases (both seconds/milli from 1970).
+func (p *Parser) ParseEpoch(v int64) (time.Time, bool, error) {
+	// sanity: at least one unit must be enabled
+	if !p.acceptUnixSeconds && !p.acceptUnixMilli && !p.acceptUnixMicro && !p.acceptUnixNano {
+		return time.Time{}, false, errors.New("no units enabled")
 	}
 
-	// TODO(nice-to-have): add more validation here:
-	// e.g. check if len of digits is reasonable for milli/micro/nano.
+	const (
+		secToMilli = 1_000
+		secToMicro = 1_000_000
+		secToNano  = 1_000_000_000
+	)
 
-	return time.Unix(0, unixDigits)
+	// plausible window [1970-01-01 … 3000-01-01).
+	timestampMin := time.Unix(0, 0)                             // 1970-01-01
+	timestampMax := time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC) // 3000-01-01
+
+	type cand struct {
+		t   time.Time
+		src string
+	}
+
+	var candidates []cand
+
+	if p.acceptUnixSeconds {
+		if c := time.Unix(v, 0).UTC(); c.Before(timestampMax) && !c.Before(timestampMin) {
+			candidates = append(candidates, cand{c, "sec"})
+		}
+	}
+
+	if p.acceptUnixMilli {
+		ns := int64(v) * (secToNano / secToMilli)
+		if c := time.Unix(0, ns); c.Before(timestampMax) && !c.Before(timestampMin) {
+			candidates = append(candidates, cand{c, "milli"})
+		}
+	}
+	if p.acceptUnixMicro {
+		ns := v * (secToNano / secToMicro)
+		if c := time.Unix(0, ns); c.Before(timestampMax) && !c.Before(timestampMin) {
+			candidates = append(candidates, cand{c, "micro"})
+		}
+	}
+	if p.acceptUnixNano {
+		if c := time.Unix(0, v); c.Before(timestampMax) && !c.Before(timestampMin) {
+			candidates = append(candidates, cand{c, "nano"})
+		}
+	}
+
+	switch len(candidates) {
+	case 0:
+		return time.Time{}, false, errors.New("timestamp out of plausible range for all allowed units")
+	case 1:
+		return candidates[0].t, false, nil
+	default:
+		return candidates[0].t, true, nil
+	}
 }
 
 // Parse parses time from given value using given layout (or using all parser's accepted layouts if layout is empty).
@@ -122,7 +163,8 @@ func (p *Parser) Parse(layout string, value string) (time.Time, error) {
 
 	if isNumericValue {
 		if p.acceptUnixSeconds || p.acceptUnixMilli || p.acceptUnixMicro || p.acceptUnixNano {
-			return p.DigitsAsTimestamp(digits), nil
+			parsedEpoch, _, err := p.ParseEpoch(digits)
+			return parsedEpoch, err
 		}
 
 		if len(p.layouts) == 0 {
@@ -167,7 +209,8 @@ func (p *Parser) Parse(layout string, value string) (time.Time, error) {
 
 			cleanDigits, err := strconv.ParseInt(cleanValue, 10, 64)
 			if err == nil {
-				return p.DigitsAsTimestamp(cleanDigits), nil
+				parsedEpoch, _, err := p.ParseEpoch(cleanDigits)
+				return parsedEpoch, err
 			} else if strictLayout {
 				return time.Time{}, fmt.Errorf("failed to parse time with layout(%s): %w", l, err)
 			}
