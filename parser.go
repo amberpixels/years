@@ -98,14 +98,14 @@ var DefaultParser = func() *Parser {
 // considering input as seconds/milliseconds/microseconds/nanoseconds.
 func (p *Parser) DigitsAsTimestamp(unixDigits int64) time.Time {
 	switch {
-	case p.acceptUnixSeconds:
-		return time.Unix(unixDigits, 0)
-	case p.acceptUnixMilli:
-		unixDigits *= int64(time.Millisecond)
-	case p.acceptUnixMicro:
-		unixDigits *= int64(time.Microsecond)
 	case p.acceptUnixNano:
 		unixDigits *= int64(time.Nanosecond)
+	case p.acceptUnixMicro:
+		unixDigits *= int64(time.Microsecond)
+	case p.acceptUnixMilli:
+		unixDigits *= int64(time.Millisecond)
+	case p.acceptUnixSeconds:
+		return time.Unix(unixDigits, 0)
 	}
 
 	// TODO(nice-to-have): add more validation here:
