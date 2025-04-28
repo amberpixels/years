@@ -164,10 +164,14 @@ func (p *Parser) Parse(layout string, value string) (time.Time, error) {
 	if isNumericValue {
 		if p.acceptUnixSeconds || p.acceptUnixMilli || p.acceptUnixMicro || p.acceptUnixNano {
 			parsedEpoch, _, err := p.ParseEpoch(digits)
-			return parsedEpoch, err
-		}
+			if err == nil {
+				return parsedEpoch, nil
+			}
 
-		if len(p.layouts) == 0 {
+			// TODO: here we need to ensure if there is an only numeric prompt - then we have a chance
+			// if there is no - then fail. for now we just continue (assuming it will fail automatically later)
+
+		} else if len(p.layouts) == 0 {
 			return time.Time{}, errors.New("misconfiguration")
 		}
 	}
