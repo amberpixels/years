@@ -129,18 +129,18 @@ func (p *Parser) ParseEpoch(v int64) (time.Time, bool, error) {
 
 	if p.acceptUnixMilli {
 		ns := int64(v) * (secToNano / secToMilli)
-		if c := time.Unix(0, ns); c.Before(timestampMax) && !c.Before(timestampMin) {
+		if c := time.Unix(0, ns).UTC(); c.Before(timestampMax) && !c.Before(timestampMin) {
 			candidates = append(candidates, cand{c, "milli"})
 		}
 	}
 	if p.acceptUnixMicro {
 		ns := v * (secToNano / secToMicro)
-		if c := time.Unix(0, ns); c.Before(timestampMax) && !c.Before(timestampMin) {
+		if c := time.Unix(0, ns).UTC(); c.Before(timestampMax) && !c.Before(timestampMin) {
 			candidates = append(candidates, cand{c, "micro"})
 		}
 	}
 	if p.acceptUnixNano {
-		if c := time.Unix(0, v); c.Before(timestampMax) && !c.Before(timestampMin) {
+		if c := time.Unix(0, v).UTC(); c.Before(timestampMax) && !c.Before(timestampMin) {
 			candidates = append(candidates, cand{c, "nano"})
 		}
 	}
