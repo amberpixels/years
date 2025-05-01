@@ -41,7 +41,7 @@ var _ = Describe("JustParseRaw", func() {
 
 	Context("when value is an integer type", func() {
 		It("parses the integer as a Unix timestamp", func() {
-			var v int = 12345
+			var v = 12345
 			parsedTime, err := years.JustParseRaw(v)
 			Expect(err).Should(Succeed())
 			Expect(parsedTime).To(be_time.Unix(int64(v)))
