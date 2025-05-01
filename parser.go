@@ -128,7 +128,7 @@ func (p *Parser) ParseEpoch(v int64) (time.Time, bool, error) {
 	}
 
 	if p.acceptUnixMilli {
-		ns := int64(v) * (secToNano / secToMilli)
+		ns := v * (secToNano / secToMilli)
 		if c := time.Unix(0, ns).UTC(); c.Before(timestampMax) && !c.Before(timestampMin) {
 			candidates = append(candidates, cand{c, "milli"})
 		}
@@ -170,7 +170,6 @@ func (p *Parser) Parse(layout string, value string) (time.Time, error) {
 
 			// TODO: here we need to ensure if there is an only numeric prompt - then we have a chance
 			// if there is no - then fail. for now we just continue (assuming it will fail automatically later)
-
 		} else if len(p.layouts) == 0 {
 			return time.Time{}, errors.New("misconfiguration")
 		}

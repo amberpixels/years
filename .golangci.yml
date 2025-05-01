@@ -372,6 +372,16 @@ linters:
       # Default: false
       os-temp-dir: true
 
+    revive:
+      rules:
+        - name: dot-imports
+          severity: warning
+          disabled: false
+          arguments:
+            - allowedPackages:
+                - github.com/onsi/ginkgo/v2
+                - github.com/onsi/gomega
+
   exclusions:
     # Log a warning if an exclusion rule is unused.
     # Default: false
