@@ -85,7 +85,7 @@ type LayoutFormat int
 const (
 	LayoutFormatUndefined LayoutFormat = iota
 	// LayoutFormatGo is a format that is supported by Go time.Parse.
-	LayoutFormatGo = 1 << (iota - 1)
+	LayoutFormatGo LayoutFormat = 1 << (iota - 1)
 	// LayoutFormatUnixTimestamp is a format that parses time from Unix timestamp (seconds or milliseconds).
 	LayoutFormatUnixTimestamp
 
