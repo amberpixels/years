@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	abucast "github.com/amberpixels/abu/cast"
+	"github.com/amberpixels/abu/cast"
 )
 
 // Parse calls Parse of a default parser.
@@ -30,11 +30,11 @@ func JustParseRaw(value any) (time.Time, error) {
 	}
 
 	switch {
-	case abucast.IsTime(value):
-		return abucast.AsTime(value), nil
-	case abucast.IsStringish(value):
-		return JustParse(abucast.AsString(value))
-	case abucast.IsInt(value):
+	case cast.IsTime(value):
+		return cast.AsTime(value), nil
+	case cast.IsStringish(value):
+		return JustParse(cast.AsString(value))
+	case cast.IsInt(value):
 		return JustParse(fmt.Sprint(value))
 	}
 

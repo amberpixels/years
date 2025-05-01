@@ -23,7 +23,7 @@ lint: lint-install
 	$(shell which golangci-lint) run
 
 test:
-	@go test -v $$(go list ./...)
+	@go test -cover ./...
 
 # Phony targets
 .PHONY: all tidy lint-install lint test
