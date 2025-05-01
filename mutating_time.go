@@ -2,108 +2,129 @@ package years
 
 import "time"
 
-// MutatingTime is a wrapper of a standard time.Time
-// so it can be mutated via helper methods.
+// MutatingTime is a wrapper around a time.Time pointer,
+// providing fluent setter methods that mutate the underlying time.
 //
 // Example:
 //
-//	t, _ := time.Parse("...")
-//	Mutate(&t).SetMonth(month.April) // leads to update the t.
+//	t, _ := time.Parse("2006-01-02 15:04:05", "2025-04-30 13:45:00")
+//	Mutate(&t).SetMonth(time.April).SetYear(2021)
+//	// t is now 2021-04-30 13:45:00.
+//
+// Use Mutate to obtain a MutatingTime for in-place modifications.
 type MutatingTime struct {
 	t *time.Time
 }
 
+// Mutate returns a MutatingTime for the given *time.Time.
 func Mutate(v *time.Time) *MutatingTime {
-	return &MutatingTime{v}
+	return &MutatingTime{t: v}
 }
 
-// TruncateToDay overrides hour, minute, second, nanosecond to zero.
-func (t *MutatingTime) TruncateToDay() *MutatingTime {
-	*(t.t) = time.Date(t.t.Year(), t.t.Month(), t.t.Day(), 0, 0, 0, 0, t.t.Location())
-
-	return t
+// TruncateToDay sets the hour, minute, second, and nanosecond to zero.
+func (mt *MutatingTime) TruncateToDay() *MutatingTime {
+	*mt.t = time.Date(mt.t.Year(), mt.t.Month(), mt.t.Day(), 0, 0, 0, 0, mt.t.Location())
+	return mt
 }
 
-// SetYear overrides year of the time.
-func (t *MutatingTime) SetYear(v int) *MutatingTime {
-	*(t.t) = time.Date(
-		0, t.t.Month(), t.t.Day(),
-		t.t.Hour(), t.t.Minute(), t.t.Second(), t.t.Nanosecond(),
-		t.t.Location(),
-	).AddDate(v, 0, 0)
-
-	return t
+// SetYear sets the year to the provided value.
+func (mt *MutatingTime) SetYear(year int) *MutatingTime {
+	*mt.t = time.Date(
+		year,
+		mt.t.Month(), mt.t.Day(),
+		mt.t.Hour(), mt.t.Minute(), mt.t.Second(), mt.t.Nanosecond(),
+		mt.t.Location(),
+	)
+	return mt
 }
 
-// SetMonth overrides month of the time.
-func (t *MutatingTime) SetMonth(month time.Month) *MutatingTime {
-	*(t.t) = time.Date(t.t.Year(), 0, t.t.Day(), t.t.Hour(), t.t.Minute(), t.t.Second(), t.t.Nanosecond(), t.t.Location()).
-		AddDate(0, int(month), 0)
-
-	return t
+// SetMonth sets the month to the provided value.
+func (mt *MutatingTime) SetMonth(month time.Month) *MutatingTime {
+	*mt.t = time.Date(
+		mt.t.Year(), month, mt.t.Day(),
+		mt.t.Hour(), mt.t.Minute(), mt.t.Second(), mt.t.Nanosecond(),
+		mt.t.Location(),
+	)
+	return mt
 }
 
-// SetDay overrides day of the time.
-// Note: Feb2 .SetDay(31) will lead to ~Mar2-3 (depending on days in Feb).
-func (t *MutatingTime) SetDay(day int) *MutatingTime {
-	*(t.t) = time.Date(
-		t.t.Year(), t.t.Month(), t.t.Day(),
-		t.t.Hour(), t.t.Minute(), t.t.Second(), t.t.Nanosecond(),
-		t.t.Location(),
-	).AddDate(0, 0, day)
-
-	return t
+// SetDay sets the day of the month to the provided value.
+func (mt *MutatingTime) SetDay(day int) *MutatingTime {
+	*mt.t = time.Date(
+		mt.t.Year(), mt.t.Month(), day,
+		mt.t.Hour(), mt.t.Minute(), mt.t.Second(), mt.t.Nanosecond(),
+		mt.t.Location(),
+	)
+	return mt
 }
 
-// SetHour overrides hour of the time.
-func (t *MutatingTime) SetHour(hour int) *MutatingTime {
-	if hour < 0 || hour >= 24 {
-		panic("SetMinute accepts hour to be from 0 to 23")
+// SetHour sets the hour (0–23). Panics if out of range.
+func (mt *MutatingTime) SetHour(hour int) *MutatingTime {
+	if hour < 0 || hour > 23 {
+		panic("SetHour accepts hour in [0,23]")
 	}
-
-	*(t.t) = time.Date(
-		t.t.Year(), t.t.Month(), t.t.Day(),
-		0, t.t.Minute(), t.t.Second(), t.t.Nanosecond(),
-		t.t.Location(),
-	).Add(time.Duration(hour) * time.Hour)
-
-	return t
+	*mt.t = time.Date(
+		mt.t.Year(), mt.t.Month(), mt.t.Day(),
+		hour, mt.t.Minute(), mt.t.Second(), mt.t.Nanosecond(),
+		mt.t.Location(),
+	)
+	return mt
 }
 
-// SetMinute overrides minute of the time.
-func (t *MutatingTime) SetMinute(minute int) *MutatingTime {
-	if minute < 0 || minute >= 60 {
-		panic("SetMinute accepts minute to be from 0 to 59")
+// SetMinute sets the minute (0–59). Panics if out of range.
+func (mt *MutatingTime) SetMinute(minute int) *MutatingTime {
+	if minute < 0 || minute > 59 {
+		panic("SetMinute accepts minute in [0,59]")
 	}
-
-	*(t.t) = time.Date(t.t.Year(), t.t.Month(), t.t.Day(), t.t.Hour(), 0, t.t.Second(), t.t.Nanosecond(), t.t.Location()).
-		Add(time.Duration(minute) * time.Minute)
-
-	return t
+	*mt.t = time.Date(
+		mt.t.Year(), mt.t.Month(), mt.t.Day(),
+		mt.t.Hour(), minute, mt.t.Second(), mt.t.Nanosecond(),
+		mt.t.Location(),
+	)
+	return mt
 }
 
-// SetSecond overrides second of the time.
-func (t *MutatingTime) SetSecond(second int) *MutatingTime {
-	if second < 0 || second >= 60 {
-		panic("SetMinute accepts second to be from 0 to 59")
+// SetSecond sets the second (0–59). Panics if out of range.
+func (mt *MutatingTime) SetSecond(second int) *MutatingTime {
+	if second < 0 || second > 59 {
+		panic("SetSecond accepts second in [0,59]")
 	}
-
-	*(t.t) = time.Date(t.t.Year(), t.t.Month(), t.t.Day(), t.t.Hour(), t.t.Minute(), 0, t.t.Nanosecond(), t.t.Location()).
-		Add(time.Duration(second) * time.Second)
-
-	return t
+	*mt.t = time.Date(
+		mt.t.Year(), mt.t.Month(), mt.t.Day(),
+		mt.t.Hour(), mt.t.Minute(), second, mt.t.Nanosecond(),
+		mt.t.Location(),
+	)
+	return mt
 }
 
-// SetNanosecond overrides nanosecond of the time.
-func (t *MutatingTime) SetNanosecond(nanosecond int) *MutatingTime {
-	if nanosecond < 0 || nanosecond >= 60 {
-		panic("SetMinute accepts nanosecond to be from 0 to 59")
+// SetMillisecond sets the millisecond (0–999) by overriding the nanosecond field.
+// Panics if out of range.
+func (mt *MutatingTime) SetMillisecond(ms int) *MutatingTime {
+	if ms < 0 || ms > 999 {
+		panic("SetMillisecond accepts millisecond in [0,999]")
 	}
-
-	*(t.t) = time.Date(t.t.Year(), t.t.Month(), t.t.Day(), t.t.Hour(), t.t.Minute(), t.t.Second(), 0, t.t.Location()).
-		Add(time.Duration(nanosecond))
-
-	return t
+	*mt.t = time.Date(
+		mt.t.Year(), mt.t.Month(), mt.t.Day(),
+		mt.t.Hour(), mt.t.Minute(), mt.t.Second(), ms*1_000_000,
+		mt.t.Location(),
+	)
+	return mt
 }
 
-func (t *MutatingTime) Time() time.Time { return *(t.t) }
+// SetNanosecond sets the nanosecond (0–999,999,999). Panics if out of range.
+func (mt *MutatingTime) SetNanosecond(nano int) *MutatingTime {
+	if nano < 0 || nano > 999_999_999 {
+		panic("SetNanosecond accepts nanosecond in [0,999999999]")
+	}
+	*mt.t = time.Date(
+		mt.t.Year(), mt.t.Month(), mt.t.Day(),
+		mt.t.Hour(), mt.t.Minute(), mt.t.Second(), nano,
+		mt.t.Location(),
+	)
+	return mt
+}
+
+// Time returns the underlying time.Time value.
+func (mt *MutatingTime) Time() time.Time {
+	return *mt.t
+}
