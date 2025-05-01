@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2" //nolint: revive // ginkgo is fine
-	. "github.com/onsi/gomega"    //nolint: revive // gomega is fine
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const (
