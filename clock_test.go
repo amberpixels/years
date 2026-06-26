@@ -1,28 +1,22 @@
 package years_test
 
 import (
+	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/amberpixels/years"
+	"github.com/expectto/be"
+	"github.com/expectto/be/be_time"
 )
 
-var _ = Describe("StdClock", func() {
-	var clock *years.StdClock
+func TestStdClock_NowIsCloseToTimeNow(t *testing.T) {
+	clock := &years.StdClock{}
 
-	BeforeEach(func() {
-		clock = &years.StdClock{}
-	})
+	start := time.Now()
+	now := clock.Now()
+	end := time.Now()
 
-	It("returns current time close to time.Now()", func() {
-		start := time.Now()
-		now := clock.Now()
-		end := time.Now()
-
-		// The returned time should be between start and end
-		Expect(now).To(BeTemporally(">=", start))
-		Expect(now).To(BeTemporally("<=", end))
-	})
-})
+	// The returned time should be between start and end
+	be.Expect(t, now).To(be_time.LaterThanEqual(start))
+	be.Expect(t, now).To(be_time.EarlierThanEqual(end))
+}
