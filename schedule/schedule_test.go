@@ -338,3 +338,84 @@ func TestSchedule_AvailableMinutes_WithGaps(t *testing.T) {
 	minutes := s.AvailableMinutes(mon)
 	assert.Equal(t, 420, minutes)
 }
+
+func TestTimeOfDay_ToDuration(t *testing.T) {
+	assert.Equal(t, 6*time.Hour, schedule.TimeOfDay{Hour: 6, Minute: 0}.ToDuration())
+	assert.Equal(t, 6*time.Hour+30*time.Minute, schedule.TimeOfDay{Hour: 6, Minute: 30}.ToDuration())
+	assert.Equal(t, 26*time.Hour, schedule.TimeOfDay{Hour: 26, Minute: 0}.ToDuration())
+}
+
+func TestMultiSlotSchedule_MatchesDay(t *testing.T) {
+	ms := schedule.MultiSlotSchedule{
+		Days: []time.Weekday{time.Monday, time.Wednesday, time.Friday},
+	}
+
+	mon := time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC)
+	assert.True(t, ms.MatchesDay(mon))
+
+	tue := time.Date(2024, 1, 16, 12, 0, 0, 0, time.UTC)
+	assert.False(t, ms.MatchesDay(tue))
+
+	wed := time.Date(2024, 1, 17, 12, 0, 0, 0, time.UTC)
+	assert.True(t, ms.MatchesDay(wed))
+}
+
+func TestMultiSlotSchedule_SlotsForDay(t *testing.T) {
+	ms := schedule.MultiSlotSchedule{
+		Days: []time.Weekday{time.Monday, time.Tuesday, time.Wednesday, time.Thursday, time.Friday},
+		DaySlots: []schedule.DaySlot{
+			{Start: schedule.TimeOfDay{Hour: 6, Minute: 0}, End: schedule.TimeOfDay{Hour: 7, Minute: 30}},
+			{Start: schedule.TimeOfDay{Hour: 23, Minute: 0}, End: schedule.TimeOfDay{Hour: 26, Minute: 0}},
+		},
+	}
+
+	// Monday should return two slots
+	mon := time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC)
+	slots := ms.SlotsForDay(mon)
+	assert.Len(t, slots, 2)
+
+	// First slot: 06:00-07:30 (90 minutes)
+	assert.Equal(t, 6, slots[0].Start.Hour())
+	assert.Equal(t, 0, slots[0].Start.Minute())
+	assert.Equal(t, 7, slots[0].End.Hour())
+	assert.Equal(t, 30, slots[0].End.Minute())
+	assert.Equal(t, 90*time.Minute, slots[0].Duration())
+
+	// Second slot: 23:00 Mon -> 02:00 Tue (cross-midnight, 3 hours)
+	assert.Equal(t, 23, slots[1].Start.Hour())
+	assert.Equal(t, 0, slots[1].Start.Minute())
+	assert.Equal(t, 15, slots[1].Start.Day()) // Monday
+	assert.Equal(t, 2, slots[1].End.Hour())
+	assert.Equal(t, 0, slots[1].End.Minute())
+	assert.Equal(t, 16, slots[1].End.Day()) // Tuesday (cross-midnight)
+	assert.Equal(t, 3*time.Hour, slots[1].Duration())
+
+	// Saturday should return no slots
+	sat := time.Date(2024, 1, 20, 12, 0, 0, 0, time.UTC)
+	slots = ms.SlotsForDay(sat)
+	assert.Empty(t, slots)
+}
+
+func TestMultiSlotSchedule_PrevMatchingDay(t *testing.T) {
+	ms := schedule.MultiSlotSchedule{
+		Days: []time.Weekday{time.Monday, time.Wednesday, time.Friday},
+	}
+
+	// Sunday -> Friday
+	sun := time.Date(2024, 1, 21, 12, 0, 0, 0, time.UTC)
+	prev := ms.PrevMatchingDay(sun)
+	assert.Equal(t, time.Friday, prev.Weekday())
+	assert.Equal(t, 19, prev.Day())
+
+	// Thursday -> Wednesday
+	thu := time.Date(2024, 1, 18, 12, 0, 0, 0, time.UTC)
+	prev = ms.PrevMatchingDay(thu)
+	assert.Equal(t, time.Wednesday, prev.Weekday())
+	assert.Equal(t, 17, prev.Day())
+}
+
+func TestDaySchedule_Interface(t *testing.T) {
+	// Verify both types satisfy DaySchedule
+	var _ schedule.DaySchedule = schedule.Schedule{}
+	var _ schedule.DaySchedule = schedule.MultiSlotSchedule{}
+}

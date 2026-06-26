@@ -5,6 +5,82 @@ import (
 	"time"
 )
 
+// TimeOfDay represents a time-of-day with minute precision.
+// Hour can be >= 24 for cross-midnight support (e.g., 26:00 = 2AM next day).
+type TimeOfDay struct {
+	Hour   int // 0-35
+	Minute int // 0-59
+}
+
+// ToDuration converts TimeOfDay to a duration from midnight.
+func (t TimeOfDay) ToDuration() time.Duration {
+	return time.Duration(t.Hour)*time.Hour + time.Duration(t.Minute)*time.Minute
+}
+
+// DaySlot represents a continuous time window within a day, possibly crossing midnight.
+type DaySlot struct {
+	Start TimeOfDay
+	End   TimeOfDay
+}
+
+// DaySchedule is the common interface for schedule types that can produce
+// per-day time slots and navigate matching days.
+type DaySchedule interface {
+	MatchesDay(t time.Time) bool
+	SlotsForDay(day time.Time) []TimeSlot
+	PrevMatchingDay(from time.Time) time.Time
+}
+
+// MultiSlotSchedule defines multiple disjoint time windows per day.
+type MultiSlotSchedule struct {
+	Days     []time.Weekday
+	DaySlots []DaySlot
+	Location *time.Location
+}
+
+// MatchesDay returns true if t's weekday is one of the schedule's days.
+func (ms MultiSlotSchedule) MatchesDay(t time.Time) bool {
+	if ms.Location != nil {
+		t = t.In(ms.Location)
+	}
+	return slices.Contains(ms.Days, t.Weekday())
+}
+
+// PrevMatchingDay finds the previous day matching the schedule.
+func (ms MultiSlotSchedule) PrevMatchingDay(from time.Time) time.Time {
+	if ms.Location != nil {
+		from = from.In(ms.Location)
+	}
+	current := from.AddDate(0, 0, -1)
+	for range 7 {
+		if ms.MatchesDay(current) {
+			return current
+		}
+		current = current.AddDate(0, 0, -1)
+	}
+	return from
+}
+
+// SlotsForDay generates time slots for a single day from multi-slot config.
+// Cross-midnight slots (hour >= 24) naturally extend into the next calendar day.
+func (ms MultiSlotSchedule) SlotsForDay(day time.Time) []TimeSlot {
+	if ms.Location != nil {
+		day = day.In(ms.Location)
+	}
+	if !ms.MatchesDay(day) {
+		return nil
+	}
+	dayStart := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, day.Location())
+	var slots []TimeSlot
+	for _, ds := range ms.DaySlots {
+		slots = append(slots, TimeSlot{
+			Start: dayStart.Add(ds.Start.ToDuration()),
+			End:   dayStart.Add(ds.End.ToDuration()),
+		})
+	}
+	return slots
+}
+
 // TimeRange represents a time range within a day (hour-based).
 type TimeRange struct {
 	StartHour int // e.g., 12
