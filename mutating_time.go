@@ -21,9 +21,61 @@ func Mutate(v *time.Time) *MutatingTime {
 	return &MutatingTime{t: v}
 }
 
+// TruncateToSecond sets the nanosecond to zero, keeping everything down to the second.
+func (mt *MutatingTime) TruncateToSecond() *MutatingTime {
+	*mt.t = time.Date(
+		mt.t.Year(), mt.t.Month(), mt.t.Day(),
+		mt.t.Hour(), mt.t.Minute(), mt.t.Second(), 0,
+		mt.t.Location(),
+	)
+	return mt
+}
+
+// TruncateToMinute sets the second and nanosecond to zero.
+func (mt *MutatingTime) TruncateToMinute() *MutatingTime {
+	*mt.t = time.Date(
+		mt.t.Year(), mt.t.Month(), mt.t.Day(),
+		mt.t.Hour(), mt.t.Minute(), 0, 0,
+		mt.t.Location(),
+	)
+	return mt
+}
+
+// TruncateToHour sets the minute, second, and nanosecond to zero.
+func (mt *MutatingTime) TruncateToHour() *MutatingTime {
+	*mt.t = time.Date(
+		mt.t.Year(), mt.t.Month(), mt.t.Day(),
+		mt.t.Hour(), 0, 0, 0,
+		mt.t.Location(),
+	)
+	return mt
+}
+
 // TruncateToDay sets the hour, minute, second, and nanosecond to zero.
 func (mt *MutatingTime) TruncateToDay() *MutatingTime {
 	*mt.t = time.Date(mt.t.Year(), mt.t.Month(), mt.t.Day(), 0, 0, 0, 0, mt.t.Location())
+	return mt
+}
+
+// TruncateToWeek moves the time back to the start of its week (at 00:00:00),
+// where weekStartsOn selects which weekday begins the week (e.g. time.Monday for
+// ISO-8601 weeks, time.Sunday for US-style weeks).
+func (mt *MutatingTime) TruncateToWeek(weekStartsOn time.Weekday) *MutatingTime {
+	mt.TruncateToDay()
+	offset := (int(mt.t.Weekday()) - int(weekStartsOn) + daysInWeek) % daysInWeek
+	*mt.t = mt.t.AddDate(0, 0, -offset)
+	return mt
+}
+
+// TruncateToMonth moves the time to the first day of its month at 00:00:00.
+func (mt *MutatingTime) TruncateToMonth() *MutatingTime {
+	*mt.t = time.Date(mt.t.Year(), mt.t.Month(), 1, 0, 0, 0, 0, mt.t.Location())
+	return mt
+}
+
+// TruncateToYear moves the time to January 1st of its year at 00:00:00.
+func (mt *MutatingTime) TruncateToYear() *MutatingTime {
+	*mt.t = time.Date(mt.t.Year(), 1, 1, 0, 0, 0, 0, mt.t.Location())
 	return mt
 }
 

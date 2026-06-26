@@ -27,16 +27,15 @@ var coreAliases = map[string]func(time.Time) time.Time{
 		return Mutate(&base).TruncateToDay().Time()
 	},
 	"this-week": func(base time.Time) time.Time {
-		startOfWeek := base.AddDate(0, 0, -int(base.Weekday()))
-		return Mutate(&startOfWeek).TruncateToDay().Time()
+		return Mutate(&base).TruncateToWeek(time.Sunday).Time()
 	},
 	"last-week": func(base time.Time) time.Time {
-		startOfLastWeek := base.AddDate(0, 0, -daysInWeek-int(base.Weekday()))
-		return Mutate(&startOfLastWeek).TruncateToDay().Time()
+		base = base.AddDate(0, 0, -daysInWeek)
+		return Mutate(&base).TruncateToWeek(time.Sunday).Time()
 	},
 	"next-week": func(base time.Time) time.Time {
-		startOfNextWeek := base.AddDate(0, 0, daysInWeek-int(base.Weekday()))
-		return Mutate(&startOfNextWeek).TruncateToDay().Time()
+		base = base.AddDate(0, 0, daysInWeek)
+		return Mutate(&base).TruncateToWeek(time.Sunday).Time()
 	},
 	// to avoid misunderstanding we deliberately do not have `this-weekend` alias
 	// as it can be considered as both "following weekend" or "previous weekend"
@@ -56,27 +55,27 @@ var coreAliases = map[string]func(time.Time) time.Time{
 		return Mutate(&lastSunday).TruncateToDay().Time()
 	},
 	"this-month": func(base time.Time) time.Time {
-		startOfMonth := time.Date(base.Year(), base.Month(), 1, 0, 0, 0, 0, base.Location())
-		return Mutate(&startOfMonth).TruncateToDay().Time()
+		return Mutate(&base).TruncateToMonth().Time()
 	},
 	"last-month": func(base time.Time) time.Time {
-		startOfLastMonth := time.Date(base.Year(), base.Month()-1, 1, 0, 0, 0, 0, base.Location())
-		return Mutate(&startOfLastMonth).TruncateToDay().Time()
+		// Operate on the 1st so the month step is overflow-safe
+		// (AddDate on e.g. Mar 31 would otherwise spill into Feb).
+		startOfMonth := Mutate(&base).TruncateToMonth().Time()
+		return startOfMonth.AddDate(0, -1, 0)
 	},
 	"next-month": func(base time.Time) time.Time {
-		startOfNextMonth := time.Date(base.Year(), base.Month()+1, 1, 0, 0, 0, 0, base.Location())
-		return Mutate(&startOfNextMonth).TruncateToDay().Time()
+		startOfMonth := Mutate(&base).TruncateToMonth().Time()
+		return startOfMonth.AddDate(0, 1, 0)
 	},
 	"this-year": func(base time.Time) time.Time {
-		startOfYear := time.Date(base.Year(), 1, 1, 0, 0, 0, 0, base.Location())
-		return Mutate(&startOfYear).TruncateToDay().Time()
+		return Mutate(&base).TruncateToYear().Time()
 	},
 	"last-year": func(base time.Time) time.Time {
-		startOfLastYear := time.Date(base.Year()-1, 1, 1, 0, 0, 0, 0, base.Location())
-		return Mutate(&startOfLastYear).TruncateToDay().Time()
+		startOfYear := Mutate(&base).TruncateToYear().Time()
+		return startOfYear.AddDate(-1, 0, 0)
 	},
 	"next-year": func(base time.Time) time.Time {
-		startOfNextYear := time.Date(base.Year()+1, 1, 1, 0, 0, 0, 0, base.Location())
-		return Mutate(&startOfNextYear).TruncateToDay().Time()
+		startOfYear := Mutate(&base).TruncateToYear().Time()
+		return startOfYear.AddDate(1, 0, 0)
 	},
 }
