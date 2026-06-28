@@ -136,6 +136,49 @@ mutatedTime := years.Mutate(&t).TruncateToDay().Time()
 fmt.Println("Mutated time:", mutatedTime)
 ```
 
+### Formatting time
+
+Canonical display layouts (so you stop re-typing the reference-time magic strings),
+plus zero/nil-safe formatting helpers:
+
+```go
+t := time.Date(2025, time.April, 30, 13, 45, 0, 0, time.UTC)
+
+years.Format(t, years.LayoutDate)     // "2025-04-30"
+years.Format(t, years.LayoutDateTime) // "2025-04-30 13:45:00"
+years.Format(t, years.LayoutHuman)    // "Apr 30, 2025 13:45"
+
+years.Format(time.Time{}, years.LayoutDate) // "" — the zero time renders empty
+years.FormatPtr(nil, years.LayoutDate)      // "" — nil-safe
+```
+
+### Durations
+
+Parse ISO-8601 durations (e.g. YouTube's `contentDetails.duration`), and render
+durations either media-clock style or in a compact human form:
+
+```go
+d, _ := years.ParseISODuration("PT15M30S") // 15m30s
+years.FormatDurationClock(d)               // "15:30"
+years.FormatDurationClock(time.Hour + 2*time.Minute + 3*time.Second) // "1:02:03"
+
+years.HumanizeDuration(90 * time.Minute)   // "1h 30m"
+years.HumanizeDuration(45 * time.Second)   // "45s"
+```
+
+### Relative time ("time ago")
+
+```go
+years.Humanize(time.Now().Add(-3 * time.Hour)) // "3h ago"
+years.Humanize(time.Now().Add(48 * time.Hour)) // "in 2d"
+
+// Clock-free variant (no global clock needed; handy in tests):
+years.HumanizeFrom(base, base.Add(-5*time.Minute)) // "5m ago"
+```
+
+`Humanize` reads the package clock (`years.Now()`), so tests can make it
+deterministic via `years.SetStdClock`.
+
 ## Contributing
 `years` welcomes contributions! Feel free to open issues, suggest improvements, or submit pull
 requests. [Contribution guidelines for this project](CONTRIBUTING.md)
