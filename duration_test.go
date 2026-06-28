@@ -59,7 +59,9 @@ func TestHumanizeDuration(t *testing.T) {
 		{45 * time.Second, "45s"},
 		{90 * time.Minute, "1h 30m"},
 		{2*time.Hour + 5*time.Minute + 3*time.Second, "2h 5m"},
-		{2*time.Hour + 3*time.Second, "2h"}, // next unit (minutes) is zero -> stop
+		{2*time.Hour + 3*time.Second, "2h 3s"},    // skips zero minutes to next non-zero unit
+		{24*time.Hour + 30*time.Minute, "1d 30m"}, // skips zero hours
+		{3 * time.Hour, "3h"},                     // single non-zero unit renders alone
 		{3*24*time.Hour + 4*time.Hour, "3d 4h"},
 		{-45 * time.Second, "45s"}, // magnitude only
 	}

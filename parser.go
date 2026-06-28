@@ -54,10 +54,26 @@ func WithCustomClock(c Clock) ParserOption {
 //nolint:gochecknoglobals // it's ok
 var defaultParserOptions []ParserOption
 
+// DefaultLayouts are the common, unambiguous Go layouts the default parser
+// understands out of the box, so years.JustParse handles the ISO-8601 forms apps
+// see most often (RFC3339 timestamps and plain dates) without per-call setup.
+// Ordered most-specific first so the first successful match is the intended one.
+// RFC3339Nano is listed alone because its trailing-.9 form already matches
+// timestamps with or without a fractional second.
+//
+//nolint:gochecknoglobals // exported, read-only set of layout constants
+var DefaultLayouts = []string{
+	time.RFC3339Nano,
+	LayoutDateTime,
+	LayoutDateTimeShort,
+	LayoutDate,
+}
+
 func ResetParserDefaults() {
 	SetParserDefaults(
 		AcceptUnixSeconds(),
 		AcceptAliases(),
+		WithLayouts(DefaultLayouts...),
 	)
 }
 

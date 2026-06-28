@@ -34,6 +34,26 @@ func TestParser_JustParseDateOnly(t *testing.T) {
 	be.Expect(t, parsedTime).To(be.Eq(expectedTime))
 }
 
+func TestParser_DefaultLayouts(t *testing.T) {
+	t.Cleanup(years.ResetParserDefaults)
+
+	// The default parser handles common ISO-8601 forms with no per-call setup.
+	// The last two cases prove RFC3339Nano covers timestamps both without and
+	// with a fractional second, so a separate RFC3339 layout is unnecessary.
+	cases := map[string]time.Time{
+		"2024-03-06":             time.Date(2024, time.March, 6, 0, 0, 0, 0, time.UTC),
+		"2024-03-06 14:30:00":    time.Date(2024, time.March, 6, 14, 30, 0, 0, time.UTC),
+		"2024-03-06 14:30":       time.Date(2024, time.March, 6, 14, 30, 0, 0, time.UTC),
+		"2024-03-06T14:30:00Z":   time.Date(2024, time.March, 6, 14, 30, 0, 0, time.UTC),
+		"2024-03-06T14:30:00.5Z": time.Date(2024, time.March, 6, 14, 30, 0, 500000000, time.UTC),
+	}
+	for in, want := range cases {
+		got, err := years.JustParse(in)
+		be.Require(t, err).To(be.Succeed())
+		be.Expect(t, got.UTC()).To(be.Eq(want))
+	}
+}
+
 func TestParser_JustParseAliases(t *testing.T) {
 	t.Cleanup(years.ResetParserDefaults)
 

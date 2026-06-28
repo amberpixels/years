@@ -58,11 +58,12 @@ func FormatDurationClock(d time.Duration) string {
 	return fmt.Sprintf("%d:%02d", m, s)
 }
 
-// HumanizeDuration renders d as a compact, human-friendly approximation: the
-// most-significant non-zero unit plus the next unit when it too is non-zero,
-// e.g. 2h5m3s -> "2h 5m", 90m -> "1h 30m", 45s -> "45s", 3d4h -> "3d 4h".
-// Sub-second durations render as "0s". The sign is dropped (magnitude only); use
-// Humanize/HumanizeFrom for signed, relative "ago"/"in" phrasing.
+// HumanizeDuration renders d as a compact, human-friendly approximation: the two
+// most-significant non-zero units, e.g. 2h5m3s -> "2h 5m", 90m -> "1h 30m",
+// 1d30m -> "1d 30m", 45s -> "45s". A duration with a single non-zero unit renders
+// it alone (3h -> "3h"). Sub-second durations render as "0s". The sign is dropped
+// (magnitude only); use Humanize/HumanizeFrom for signed, relative "ago"/"in"
+// phrasing.
 func HumanizeDuration(d time.Duration) string {
 	if d < 0 {
 		d = -d
@@ -84,8 +85,13 @@ func HumanizeDuration(d time.Duration) string {
 		i++
 	}
 	out := []string{strconv.Itoa(parts[i].v) + parts[i].u}
-	if i+1 < len(parts) && parts[i+1].v != 0 {
-		out = append(out, strconv.Itoa(parts[i+1].v)+parts[i+1].u)
+	// Append the next non-zero unit, skipping any zero units in between, so
+	// 1d0h30m reads "1d 30m" rather than collapsing to "1d".
+	for j := i + 1; j < len(parts); j++ {
+		if parts[j].v != 0 {
+			out = append(out, strconv.Itoa(parts[j].v)+parts[j].u)
+			break
+		}
 	}
 	return strings.Join(out, " ")
 }
