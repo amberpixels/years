@@ -9,7 +9,6 @@
 A time toolkit for Go: parsing, formatting, humanizing, and navigating time-based data.
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/amberpixels/years.svg)](https://pkg.go.dev/github.com/amberpixels/years)
-[![Go Report Card](https://goreportcard.com/badge/github.com/amberpixels/years)](https://goreportcard.com/report/github.com/amberpixels/years)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/amberpixels/years)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
