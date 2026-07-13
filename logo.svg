@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 80" width="380" height="80" xml:space="preserve">
+  <style>
+    text { font-family: 'Menlo', 'Consolas', 'Courier New', monospace; font-size: 20px; white-space: pre; }
+  </style>
+  <rect width="380" height="80" rx="6" fill="transparent"/>
+  <!-- Y E A R S -->
+  <text y="28"><tspan fill="#FBBF24"> ░█─░█</tspan><tspan fill="#F97316"> ░█▀▀▀</tspan><tspan fill="#EC4899"> ░█▀▀█</tspan><tspan fill="#A855F7"> ░█▀▀█</tspan><tspan fill="#7C3AED"> ░█▀▀▀█</tspan></text>
+  <text y="52"><tspan fill="#FBBF24"> ─▀█▀─</tspan><tspan fill="#F97316"> ░█▀▀▀</tspan><tspan fill="#EC4899"> ░█▄▄█</tspan><tspan fill="#A855F7"> ░█▄▄▀</tspan><tspan fill="#7C3AED"> ─▀▀▀▄▄</tspan></text>
+  <text y="76"><tspan fill="#FBBF24"> ──█──</tspan><tspan fill="#F97316"> ░█▄▄▄</tspan><tspan fill="#EC4899"> ░█─░█</tspan><tspan fill="#A855F7"> ░█─░█</tspan><tspan fill="#7C3AED"> ░█▄▄▄█</tspan></text>
+</svg>
