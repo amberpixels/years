@@ -5,7 +5,7 @@ go 1.26
 require (
 	github.com/amberpixels/k1 v0.1.8
 	github.com/djherbis/times v1.6.0
-	github.com/expectto/be v1.0.0-rc.6
+	github.com/expectto/be v1.0.0-rc.8
 )
 
 require (
