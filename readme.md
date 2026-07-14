@@ -181,10 +181,33 @@ found, _ := v.Navigate("yesterday")
 
 Traverse options: `O_PAST` / `O_FUTURE` for direction, `O_LEAVES_ONLY` / `O_CONTAINERS_ONLY` / `O_ALL` for node filtering, `O_NON_CALENDAR` to include nodes without a parsed time. For time from file metadata (modification/creation/access) instead of names, see `NewWaypointFile`.
 
-## Contributing
+## Schedules
 
-Issues and pull requests are welcome - see [CONTRIBUTING.md](CONTRIBUTING.md).
+The `schedule` subpackage models recurring weekly time windows - working hours, quiet hours, availability:
+
+```go
+import "github.com/amberpixels/years/schedule"
+
+work := schedule.Schedule{
+	Days:      []time.Weekday{time.Monday, time.Tuesday, time.Wednesday, time.Thursday, time.Friday},
+	StartHour: 9,
+	EndHour:   17,
+	Gaps:      []schedule.TimeRange{{StartHour: 12, EndHour: 13}}, // lunch break
+}
+
+work.Contains(t)         // true on a Monday at 10:30
+work.SlotsForDay(t)      // [09:00-12:00, 13:00-17:00]
+work.AvailableMinutes(t) // 420
+work.NextMatchingDay(t)  // next scheduled day
+```
+
+`MultiSlotSchedule` covers disjoint (even cross-midnight) windows per day, and `CompositeSchedule` merges several schedules into one.
+
+## Feedback
+
+`years` is a solo, opinionated project - but if you stumbled upon it and have
+ideas, questions, or bug reports, an [issue](https://github.com/amberpixels/years/issues) is always welcome :)
 
 ## License
 
-MIT - see [LICENSE](LICENSE).
+[MIT](LICENSE) © [amberpixels](https://amberpixels.io)

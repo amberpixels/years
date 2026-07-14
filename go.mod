@@ -3,7 +3,7 @@ module github.com/amberpixels/years
 go 1.26
 
 require (
-	github.com/amberpixels/k1 v0.1.8
+	github.com/amberpixels/k1 v0.2.0
 	github.com/djherbis/times v1.6.0
 	github.com/expectto/be v1.0.0-rc.8
 )
@@ -16,6 +16,6 @@ require (
 	github.com/onsi/gomega v1.42.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
 )
