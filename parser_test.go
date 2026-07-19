@@ -78,3 +78,42 @@ func TestParser_JustParseAliases(t *testing.T) {
 	be.Require(t, err).To(be.Succeed())
 	be.Expect(t, tomorrow.String()).To(be.Eq(`2024-03-02 00:00:00 +0000 UTC`))
 }
+
+func TestParser_WithCustomAliases(t *testing.T) {
+	t.Cleanup(years.ResetParserDefaults)
+
+	mockClock := &StaticClock{
+		now: time.Date(2024, time.March, 01, 14, 30, 59, 0, time.UTC),
+	}
+	customAliases := map[string]func(time.Time) time.Time{
+		"day-after-tomorrow": func(base time.Time) time.Time {
+			base = base.AddDate(0, 0, 2)
+			return years.Mutate(&base).TruncateToDay().Time()
+		},
+	}
+
+	parser := years.NewParser(
+		years.WithCustomClock(mockClock),
+		years.AcceptAliases(),
+		years.WithCustomAliases(customAliases),
+	)
+
+	// The custom alias resolves
+	dayAfterTomorrow, err := parser.JustParse("day-after-tomorrow")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, dayAfterTomorrow.String()).To(be.Eq(`2024-03-03 00:00:00 +0000 UTC`))
+
+	// Core aliases stay intact on the same parser
+	today, err := parser.JustParse("today")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, today.String()).To(be.Eq(`2024-03-01 00:00:00 +0000 UTC`))
+
+	// The caller's map was not polluted with core aliases
+	be.Expect(t, customAliases).To(be.HaveLength(1))
+
+	// The shared core alias table was not polluted either: a fresh parser
+	// without the option must not know the custom alias
+	freshParser := years.NewParser(years.WithCustomClock(mockClock), years.AcceptAliases())
+	_, err = freshParser.JustParse("day-after-tomorrow")
+	be.Expect(t, err).To(be.HaveOccurred())
+}

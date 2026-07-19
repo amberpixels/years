@@ -203,6 +203,44 @@ work.NextMatchingDay(t)  // next scheduled day
 
 `MultiSlotSchedule` covers disjoint (even cross-midnight) windows per day, and `CompositeSchedule` merges several schedules into one.
 
+### Week patterns
+
+`WeekPattern` is a *recurring* wall-clock predicate - "weekends", "nights" - with no anchor in absolute time (unlike aliases: `last-week` resolves to one concrete week). `ParsePatterns` turns a human vocabulary into patterns; comma means union:
+
+```go
+patterns, _ := schedule.ParsePatterns("weekends,mornings")
+
+patterns.Contains(t) // true on Saturday 15:00, or on any day at 09:30
+```
+
+The built-in vocabulary (case-insensitive, plural-tolerant): weekday names (`monday(s)`...), `weekend(s)`, `workingday(s)`/`workday(s)`/`weekday(s)`, and the day parts of `DefaultDayPartition`:
+
+| part | span |
+|---|---|
+| `night` | 22:00-05:00 (wraps midnight) |
+| `morning` | 05:00-12:00 |
+| `lunchtime` | 12:00-14:00 |
+| `afternoon` | 14:00-17:00 |
+| `evening` | 17:00-22:00 |
+
+The partition covers the full day exactly once (enforced by `Validate`), so `PartOf` doubles as a group-by key:
+
+```go
+schedule.DefaultDayPartition.PartOf(t).Name // "morning" | "lunchtime" | ...
+```
+
+A cross-midnight span belongs to the day it starts on - Sunday night includes Monday 01:00, the way humans mean it. Patterns read the wall clock of the given time as-is (no timezone field; callers own locality). Domain words and custom partitions plug in via `Vocabulary`:
+
+```go
+vocab := schedule.DefaultVocabulary()
+vocab.Extra = map[string]schedule.WeekPatterns{"officehours": {{
+	Days:  []time.Weekday{time.Monday, time.Tuesday, time.Wednesday, time.Thursday, time.Friday},
+	Spans: []schedule.DaySlot{{Start: schedule.TimeOfDay{Hour: 9}, End: schedule.TimeOfDay{Hour: 17}}},
+}}}
+
+patterns, _ := vocab.ParsePatterns("officehours")
+```
+
 ## Feedback
 
 `years` is a solo, opinionated project - but if you stumbled upon it and have

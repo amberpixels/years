@@ -47,9 +47,18 @@ func AcceptRelativeOffsets() ParserOption {
 	return func(p *Parser) { p.acceptRelativeOffsets = true }
 }
 
+// WithCustomAliases merges the given aliases into the parser's alias table
+// (custom entries win over same-named core ones). The parser's table is
+// cloned first: the shared core alias map and the caller's map both stay
+// untouched.
 func WithCustomAliases(customAliases map[string]func(time.Time) time.Time) ParserOption {
 	return func(p *Parser) {
-		maps.Copy(customAliases, p.aliases)
+		merged := maps.Clone(p.aliases)
+		if merged == nil {
+			merged = make(map[string]func(time.Time) time.Time, len(customAliases))
+		}
+		maps.Copy(merged, customAliases)
+		p.aliases = merged
 	}
 }
 
