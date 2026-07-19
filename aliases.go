@@ -6,6 +6,12 @@ const (
 	daysInWeek = 7
 )
 
+// Weekend alias names, shared between the instant table and the period logic.
+const (
+	aliasNextWeekend = "next-weekend"
+	aliasLastWeekend = "last-weekend"
+)
+
 // coreAliases holds all registered aliases
 // Aliases that are timezone-dependent by default use timezone of given base time
 //
@@ -39,14 +45,14 @@ var coreAliases = map[string]func(time.Time) time.Time{
 	},
 	// to avoid misunderstanding we deliberately do not have `this-weekend` alias
 	// as it can be considered as both "following weekend" or "previous weekend"
-	"next-weekend": func(base time.Time) time.Time {
+	aliasNextWeekend: func(base time.Time) time.Time {
 		followingSaturday := base
 		for followingSaturday.Weekday() != time.Saturday {
 			followingSaturday = followingSaturday.AddDate(0, 0, 1)
 		}
 		return Mutate(&followingSaturday).TruncateToDay().Time()
 	},
-	"last-weekend": func(base time.Time) time.Time {
+	aliasLastWeekend: func(base time.Time) time.Time {
 		lastSaturday := base
 		for lastSaturday.Weekday() != time.Saturday {
 			lastSaturday = lastSaturday.AddDate(0, 0, -1)

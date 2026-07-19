@@ -19,6 +19,8 @@ type Parser struct {
 
 	acceptAliases bool
 
+	acceptRelativeOffsets bool
+
 	clock   Clock
 	layouts []string
 
@@ -36,6 +38,13 @@ func AcceptUnixNano() ParserOption    { return func(p *Parser) { p.acceptUnixNan
 
 func AcceptAliases() ParserOption {
 	return func(p *Parser) { p.acceptAliases = true }
+}
+
+// AcceptRelativeOffsets opts in to duration-offset expressions ("12h", "7d",
+// "2w", "3mo", "1y"). An offset denotes the period of the last N units (see
+// ParsePeriod); the instant Parse returns that period's start, i.e. now − offset.
+func AcceptRelativeOffsets() ParserOption {
+	return func(p *Parser) { p.acceptRelativeOffsets = true }
 }
 
 func WithCustomAliases(customAliases map[string]func(time.Time) time.Time) ParserOption {
@@ -73,6 +82,7 @@ func ResetParserDefaults() {
 	SetParserDefaults(
 		AcceptUnixSeconds(),
 		AcceptAliases(),
+		AcceptRelativeOffsets(),
 		WithLayouts(DefaultLayouts...),
 	)
 }
@@ -245,6 +255,12 @@ func (p *Parser) Parse(layout string, value string) (time.Time, error) {
 			if value == alias {
 				return aliasCb(p.clock.Now()), nil
 			}
+		}
+	}
+
+	if p.acceptRelativeOffsets {
+		if period, ok := parseRelativeOffset(value, p.clock.Now()); ok {
+			return period.Start, nil
 		}
 	}
 
