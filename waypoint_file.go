@@ -31,11 +31,6 @@ type WaypointFile struct {
 
 type WaypointFiles []*WaypointFile
 
-func (w *WaypointFile) Time() time.Time      { return w.t }
-func (w *WaypointFile) Identifier() string   { return w.path }
-func (w *WaypointFile) IsContainer() bool    { return w.fileInfo.IsDir() }
-func (w *WaypointFile) Children() []Waypoint { return w.waypoints }
-
 func NewWaypointFile(path string, timeGetter func(timeSpec times.Timespec) time.Time) (*WaypointFile, error) {
 	stat, err := os.Stat(path)
 	if err != nil {
@@ -82,3 +77,8 @@ func NewWaypointFile(path string, timeGetter func(timeSpec times.Timespec) time.
 
 	return w, nil
 }
+
+func (w *WaypointFile) Time() time.Time      { return w.t }
+func (w *WaypointFile) Identifier() string   { return w.path }
+func (w *WaypointFile) IsContainer() bool    { return w.fileInfo.IsDir() }
+func (w *WaypointFile) Children() []Waypoint { return w.waypoints }

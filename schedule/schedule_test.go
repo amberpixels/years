@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/amberpixels/years/schedule"
 	"github.com/expectto/be"
+
+	"github.com/amberpixels/years/schedule"
 )
 
 func TestSchedule_MatchesDay(t *testing.T) {

@@ -149,7 +149,7 @@ func layoutIsDateOnly(layout string) bool {
 //   - a value matching a date-only layout resolves to that whole day;
 //   - anything else Parse understands (timestamps, epochs) resolves to an
 //     instant period.
-func (p *Parser) ParsePeriod(layout string, value string) (Period, error) {
+func (p *Parser) ParsePeriod(layout, value string) (Period, error) {
 	if p.acceptAliases {
 		if period, ok := p.periodForAlias(value, p.clock.Now()); ok {
 			return period, nil
@@ -194,7 +194,7 @@ func (p *Parser) JustParsePeriod(value string) (Period, error) {
 }
 
 // ParsePeriod calls ParsePeriod of a default parser.
-func ParsePeriod(layout string, value string) (Period, error) {
+func ParsePeriod(layout, value string) (Period, error) {
 	return DefaultParser().ParsePeriod(layout, value)
 }
 

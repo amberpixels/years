@@ -1,11 +1,11 @@
 package years_test
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/amberpixels/years"
 	"github.com/expectto/be"
+
+	"github.com/amberpixels/years"
 )
 
 func TestParseLayout_ValidGoLayouts(t *testing.T) {
@@ -24,7 +24,7 @@ func TestParseLayout_ValidGoLayouts(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			details := years.ParseLayout(tc.layout)
-			be.Require(t, details).NotTo(be.Nil(), fmt.Sprintf("ParseLayout should not return nil for %s", tc.layout))
+			be.Require(t, details).NotTo(be.Nil(), "ParseLayout should not return nil for "+tc.layout)
 			be.Expect(t, details.Format).To(be.Eq(years.LayoutFormatGo))
 			be.Expect(t, details.MinimalUnit).To(be.Eq(tc.expectedUnit))
 			be.Expect(t, details.Units).To(be.Eq(tc.expectedUnits))
@@ -47,7 +47,7 @@ func TestParseLayout_UnixTimestampLayouts(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			details := years.ParseLayout(tc.layout)
-			be.Require(t, details).NotTo(be.Nil(), fmt.Sprintf("ParseLayout should not return nil for %s", tc.layout))
+			be.Require(t, details).NotTo(be.Nil(), "ParseLayout should not return nil for "+tc.layout)
 			be.Expect(t, details.Format).To(be.Eq(years.LayoutFormatUnixTimestamp))
 			be.Expect(t, details.MinimalUnit).To(be.Eq(tc.expectedUnit))
 			be.Expect(t, details.Units).To(be.Eq([]years.DateUnit{tc.expectedUnit}))

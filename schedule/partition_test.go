@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/amberpixels/years/schedule"
 	"github.com/expectto/be"
 	"github.com/expectto/be/be_string"
+
+	"github.com/amberpixels/years/schedule"
 )
 
 func TestDayPartition_Validate_Default(t *testing.T) {

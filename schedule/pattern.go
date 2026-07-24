@@ -74,21 +74,6 @@ func (p WeekPattern) Contains(t time.Time) bool {
 	return false
 }
 
-// spansContain reports whether minute m, counted from the attribution day's
-// midnight (so possibly >= 1440 when attributed to the previous date), falls
-// into one of the spans. Empty Spans mean the whole day.
-func (p WeekPattern) spansContain(m int) bool {
-	if len(p.Spans) == 0 {
-		return m < minutesPerDay
-	}
-	for _, span := range p.Spans {
-		if m >= span.Start.totalMinutes() && m < span.End.totalMinutes() {
-			return true
-		}
-	}
-	return false
-}
-
 // Contains reports whether t matches any of the patterns (union semantics).
 func (ps WeekPatterns) Contains(t time.Time) bool {
 	for _, p := range ps {
@@ -142,6 +127,21 @@ func (p WeekPattern) MultiSlotSchedule(loc *time.Location) MultiSlotSchedule {
 	}
 
 	return MultiSlotSchedule{Days: days, DaySlots: daySlots, Location: loc}
+}
+
+// spansContain reports whether minute m, counted from the attribution day's
+// midnight (so possibly >= 1440 when attributed to the previous date), falls
+// into one of the spans. Empty Spans mean the whole day.
+func (p WeekPattern) spansContain(m int) bool {
+	if len(p.Spans) == 0 {
+		return m < minutesPerDay
+	}
+	for _, span := range p.Spans {
+		if m >= span.Start.totalMinutes() && m < span.End.totalMinutes() {
+			return true
+		}
+	}
+	return false
 }
 
 // totalMinutes is the time-of-day as minutes from midnight of its day

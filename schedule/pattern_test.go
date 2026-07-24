@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/amberpixels/years/schedule"
 	"github.com/expectto/be"
+
+	"github.com/amberpixels/years/schedule"
 )
 
 // nightSpan is 22:00 through 05:00 next day (cross-midnight).
@@ -15,7 +16,7 @@ var nightSpan = schedule.DaySlot{
 }
 
 // at builds a wall-clock instant on a known week: 2024-01-15 is a Monday.
-func at(day int, hour, minute int) time.Time {
+func at(day, hour, minute int) time.Time {
 	return time.Date(2024, 1, day, hour, minute, 0, 0, time.UTC)
 }
 

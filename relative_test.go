@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/amberpixels/years"
 	"github.com/expectto/be"
+
+	"github.com/amberpixels/years"
 )
 
 func TestHumanizeFrom(t *testing.T) {

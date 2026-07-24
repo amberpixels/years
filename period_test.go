@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/amberpixels/years"
 	"github.com/expectto/be"
+
+	"github.com/amberpixels/years"
 )
 
 // periodTestParser builds a parser with a deterministic clock and the same

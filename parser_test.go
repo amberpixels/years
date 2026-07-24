@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/amberpixels/years"
 	"github.com/expectto/be"
 	"github.com/expectto/be/be_time"
+
+	"github.com/amberpixels/years"
 )
 
 func TestParser_JustParseUnixTimestamp(t *testing.T) {
@@ -58,7 +59,7 @@ func TestParser_JustParseAliases(t *testing.T) {
 	t.Cleanup(years.ResetParserDefaults)
 
 	mockClock := &StaticClock{
-		now: time.Date(2024, time.March, 01, 14, 30, 59, 0, time.UTC),
+		now: time.Date(2024, time.March, 0o1, 14, 30, 59, 0, time.UTC),
 	}
 	parser := years.NewParser(
 		years.WithCustomClock(mockClock),
@@ -83,7 +84,7 @@ func TestParser_WithCustomAliases(t *testing.T) {
 	t.Cleanup(years.ResetParserDefaults)
 
 	mockClock := &StaticClock{
-		now: time.Date(2024, time.March, 01, 14, 30, 59, 0, time.UTC),
+		now: time.Date(2024, time.March, 0o1, 14, 30, 59, 0, time.UTC),
 	}
 	customAliases := map[string]func(time.Time) time.Time{
 		"day-after-tomorrow": func(base time.Time) time.Time {

@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/amberpixels/years"
 	"github.com/djherbis/times"
 	"github.com/expectto/be"
+
+	"github.com/amberpixels/years"
 )
 
 // voyagerSetup is the per-test setup: it pins the package clock to a known
@@ -17,7 +18,7 @@ import (
 func voyagerSetup(t *testing.T, layouts ...string) {
 	t.Helper()
 	years.SetStdClock(&StaticClock{
-		now: time.Date(2024, time.March, 05, 14, 30, 59, 0, time.UTC),
+		now: time.Date(2024, time.March, 0o5, 14, 30, 59, 0, time.UTC),
 	})
 	years.ResetParserDefaults()
 	if len(layouts) > 0 {

@@ -25,15 +25,7 @@ type TimeNamedWaypointFile struct {
 	unit DateUnit
 }
 
-func (w *TimeNamedWaypointFile) setNonCalendar() {
-	w.layout = ""
-	w.timeInput = ""
-	w.t = time.Time{}
-}
-
 type TimeNamedWaypointFiles []*TimeNamedWaypointFile
-
-func (w *TimeNamedWaypointFile) Time() time.Time { return w.t }
 
 func NewTimeNamedWaypointFile(
 	path string, fullLayout string,
@@ -59,10 +51,10 @@ func NewTimeNamedWaypointFile(
 			ownLayout = strings.Split(ownLayout, string(os.PathSeparator))[0]
 		}
 
-		layout = parent.layout + string(os.PathSeparator) + ownLayout
+		layout = filepath.Join(parent.layout, ownLayout)
 
 		if parent.timeInput != "" {
-			w.timeInput = parent.timeInput + string(os.PathSeparator) + w.timeInput
+			w.timeInput = filepath.Join(parent.timeInput, w.timeInput)
 		}
 	}
 
@@ -110,4 +102,12 @@ func NewTimeNamedWaypointFile(
 	}
 
 	return w, nil
+}
+
+func (w *TimeNamedWaypointFile) Time() time.Time { return w.t }
+
+func (w *TimeNamedWaypointFile) setNonCalendar() {
+	w.layout = ""
+	w.timeInput = ""
+	w.t = time.Time{}
 }

@@ -191,7 +191,7 @@ func (p *Parser) ParseEpoch(v int64) (time.Time, bool, error) {
 }
 
 // Parse parses time from given value using given layout (or using all parser's accepted layouts if layout is empty).
-func (p *Parser) Parse(layout string, value string) (time.Time, error) {
+func (p *Parser) Parse(layout, value string) (time.Time, error) {
 	// Shorthand: if possible, try to parse as a numeric timestamp:
 	digits, parseIntErr := strconv.ParseInt(value, 10, 64)
 	isNumericValue := parseIntErr == nil
@@ -253,7 +253,7 @@ func (p *Parser) Parse(layout string, value string) (time.Time, error) {
 				return time.Time{}, fmt.Errorf("failed to parse time with layout(%s): %w", l, err)
 			}
 		case LayoutFormatUndefined:
-			fallthrough
+			return time.Time{}, fmt.Errorf("unknown layout format: %s", l)
 		default:
 			return time.Time{}, fmt.Errorf("unknown layout format: %s", l)
 		}

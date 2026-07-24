@@ -8,7 +8,7 @@ import (
 )
 
 // Parse calls Parse of a default parser.
-func Parse(layout string, value string) (time.Time, error) {
+func Parse(layout, value string) (time.Time, error) {
 	return DefaultParser().Parse(layout, value)
 }
 

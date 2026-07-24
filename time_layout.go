@@ -9,11 +9,12 @@ import (
 // DateUnit stays for the unit of a date like Day/Month/Year/etc.
 type DateUnit int
 
+const UnitUndefined DateUnit = 0
+
 const (
-	UnitUndefined DateUnit = iota
 	// Day as day of the month
 	// TODO(nice-to-have) support day of the week + day of the year.
-	Day  DateUnit = 1 << (iota - 1)
+	Day  DateUnit = 1 << iota
 	Week          // not supported yet
 	Month
 	Quarter // not supported yet
@@ -82,10 +83,11 @@ var DateUnitsDict = struct {
 
 type LayoutFormat int
 
+const LayoutFormatUndefined LayoutFormat = 0
+
 const (
-	LayoutFormatUndefined LayoutFormat = iota
 	// LayoutFormatGo is a format that is supported by Go time.Parse.
-	LayoutFormatGo LayoutFormat = 1 << (iota - 1)
+	LayoutFormatGo LayoutFormat = 1 << iota
 	// LayoutFormatUnixTimestamp is a format that parses time from Unix timestamp (seconds or milliseconds).
 	LayoutFormatUnixTimestamp
 
@@ -99,7 +101,7 @@ func (lf LayoutFormat) String() string {
 	case LayoutFormatUnixTimestamp:
 		return "unix_timestamp"
 	case LayoutFormatUndefined:
-		fallthrough
+		panic("fix LayoutFormat enum!")
 	default:
 		panic("fix LayoutFormat enum!")
 	}
@@ -151,9 +153,8 @@ func ParseLayout(layout string) *LayoutDetails {
 	// TODO: stronger check: 2 should not be part of 2006
 	//       also `_2` should not be confused with __2
 	twoNotFollowedByZero := regexp.MustCompile(`2([^0]|$)`)
-	containsDay :=
-		strings.Contains(layout, "_2") || strings.Contains(layout, "02") ||
-			twoNotFollowedByZero.MatchString(layout)
+	containsDay := strings.Contains(layout, "_2") || strings.Contains(layout, "02") ||
+		twoNotFollowedByZero.MatchString(layout)
 
 	if containsDay {
 		result.MinimalUnit = Day
@@ -166,10 +167,9 @@ func ParseLayout(layout string) *LayoutDetails {
 
 	// Month: "Jan" "January" "01" "1"
 	oneNotFollowedByFive := regexp.MustCompile(`0?1([^5]|$)`) // `1` is month but `15` are hours
-	containsMonth :=
-		strings.Contains(layout, "01") ||
-			strings.Contains(layout, "Jan") ||
-			oneNotFollowedByFive.MatchString(layout)
+	containsMonth := strings.Contains(layout, "01") ||
+		strings.Contains(layout, "Jan") ||
+		oneNotFollowedByFive.MatchString(layout)
 
 	if containsMonth {
 		if !result.MinimalUnit.Defined() {

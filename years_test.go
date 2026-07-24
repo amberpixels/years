@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/amberpixels/years"
 	"github.com/expectto/be"
 	"github.com/expectto/be/be_time"
+
+	"github.com/amberpixels/years"
 )
 
 func TestJustParseRaw_Nil(t *testing.T) {

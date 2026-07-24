@@ -17,19 +17,7 @@ type WaypointString struct {
 	t time.Time
 }
 
-func (w *WaypointString) setNonCalendar() {
-	w.layout = ""
-	w.timeInput = ""
-	w.t = time.Time{}
-}
-
 type WaypointStrings []*WaypointString
-
-func (w *WaypointString) Time() time.Time                       { return w.t }
-func (w *WaypointString) Identifier() string                    { return w.timeInput }
-func (w *WaypointString) IsContainer() bool                     { return false }
-func (w *WaypointString) Children() []Waypoint                  { return nil }
-func (w *WaypointString) Voyager(parserArg ...*Parser) *Voyager { return NewVoyager(w, parserArg...) }
 
 func NewWaypointString(v string, layoutArg ...string) *WaypointString {
 	w := &WaypointString{timeInput: v}
@@ -46,6 +34,18 @@ func NewWaypointString(v string, layoutArg ...string) *WaypointString {
 	}
 
 	return w
+}
+
+func (w *WaypointString) Time() time.Time                       { return w.t }
+func (w *WaypointString) Identifier() string                    { return w.timeInput }
+func (w *WaypointString) IsContainer() bool                     { return false }
+func (w *WaypointString) Children() []Waypoint                  { return nil }
+func (w *WaypointString) Voyager(parserArg ...*Parser) *Voyager { return NewVoyager(w, parserArg...) }
+
+func (w *WaypointString) setNonCalendar() {
+	w.layout = ""
+	w.timeInput = ""
+	w.t = time.Time{}
 }
 
 func WaypointsFromStrings(timeStrings []string, layoutArg ...string) []Waypoint {

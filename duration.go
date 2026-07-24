@@ -31,7 +31,7 @@ func ParseISODuration(s string) (time.Duration, error) {
 		return 0, nil
 	}
 	m := iso8601DurationRe.FindStringSubmatch(s)
-	if m == nil || (m[1] == "" && m[2] == "" && m[3] == "" && m[4] == "") {
+	if len(m) < 5 || (m[1] == "" && m[2] == "" && m[3] == "" && m[4] == "") {
 		return 0, fmt.Errorf("%w: %q", ErrInvalidISODuration, s)
 	}
 	atoi := func(v string) int {
