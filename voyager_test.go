@@ -110,8 +110,63 @@ func TestVoyager_StringWaypoints_DifferentLayouts(t *testing.T) {
 	})
 }
 
+// setupFiletimeTree rebuilds the by_filetime testdata tree from scratch.
+// Git preserves neither birth nor modification times, so on a fresh checkout
+// (CI) every timestamp collapses to checkout time and the time-ordered
+// traversals below become undefined. Creation order fixes the birth-time
+// ordering (root < foobar < first < second < third); explicit Chtimes then
+// pins the modification-time ordering (first < second < third < foobar < root).
+func setupFiletimeTree(t *testing.T) {
+	t.Helper()
+	root := filepath.Join(TestDataPath, "by_filetime")
+	be.Require(t, os.RemoveAll(root)).To(be.Succeed())
+
+	pause := func() { time.Sleep(20 * time.Millisecond) } // keeps birth times strictly increasing
+	mkdir := func(p string) {
+		be.Require(t, os.Mkdir(p, 0o755)).To(be.Succeed())
+		pause()
+	}
+	write := func(p, content string) {
+		be.Require(t, os.WriteFile(p, []byte(content), 0o600)).To(be.Succeed())
+		pause()
+	}
+
+	foobar := filepath.Join(root, "foobar")
+	first := filepath.Join(root, "first.txt")
+	second := filepath.Join(foobar, "second.txt")
+	third := filepath.Join(foobar, "third.txt")
+
+	mkdir(root)
+	mkdir(foobar)
+	write(first, "Hello there")
+	write(second, "Hello there (second)")
+	write(third, "Hello there (third)")
+
+	// Two Chtimes passes, both with directories after files (each write above
+	// bumped its parent's mod time):
+	//
+	// Pass A shapes BIRTH times. On Linux Chtimes never touches btime and the
+	// creation order above already matches; on macOS/APFS setting an mtime
+	// older than the birth time lowers the birth time to it, so this pass
+	// deliberately plants old, ascending stamps in birth order.
+	base := time.Now().Add(-2 * time.Hour)
+	for i, p := range []string{root, foobar, first, second, third} {
+		ts := base.Add(time.Duration(i) * time.Minute)
+		be.Require(t, os.Chtimes(p, ts, ts)).To(be.Succeed())
+	}
+
+	// Pass B shapes MOD times, using strictly newer stamps than pass A so no
+	// birth time moves again.
+	base = base.Add(time.Hour)
+	for i, p := range []string{first, second, third, foobar, root} {
+		ts := base.Add(time.Duration(i) * time.Minute)
+		be.Require(t, os.Chtimes(p, ts, ts)).To(be.Succeed())
+	}
+}
+
 func TestVoyager_FileWaypoints_ByBirthTime(t *testing.T) {
 	voyagerSetup(t)
+	setupFiletimeTree(t)
 	calendarPath := filepath.Join(TestDataPath, "by_filetime")
 
 	wf, err := years.NewWaypointFile(calendarPath, func(ts times.Timespec) time.Time {
@@ -151,6 +206,7 @@ func TestVoyager_FileWaypoints_ByBirthTime(t *testing.T) {
 
 func TestVoyager_FileWaypoints_ByModTime(t *testing.T) {
 	voyagerSetup(t)
+	setupFiletimeTree(t)
 	calendarPath := filepath.Join(TestDataPath, "by_filetime")
 
 	wf, err := years.NewWaypointFile(calendarPath, func(ts times.Timespec) time.Time {
