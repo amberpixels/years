@@ -1,6 +1,7 @@
 package years_test
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -191,6 +192,10 @@ func TestVoyager_TimeNamedFile_Calendar1(t *testing.T) {
 	const testCalendarLayout = "2006/Jan/2006-01-02.txt"
 	voyagerSetup(t, "2006", "Jan", "2006-01-02")
 	calendarPath := filepath.Join(TestDataPath, "calendar1")
+
+	// 2024/Jan is a month with no entries - and git cannot track an empty
+	// directory, so a fresh checkout lacks it. Recreate it before traversing.
+	be.Require(t, os.MkdirAll(filepath.Join(calendarPath, "2024", "Jan"), 0o755)).To(be.Succeed())
 
 	wf, err := years.NewTimeNamedWaypointFile(calendarPath, testCalendarLayout)
 	be.Require(t, err).To(be.Succeed())
