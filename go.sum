@@ -98,8 +98,8 @@ github.com/alingse/asasalint v0.0.11 h1:SFwnQXJ49Kx/1GghOFz1XGqHYKp21Kq1nHad/0WQ
 github.com/alingse/asasalint v0.0.11/go.mod h1:nCaoMhw7a9kSJObvQyVzNTPBDbNpdocqrSP7t/cW5+I=
 github.com/alingse/nilnesserr v0.2.0 h1:raLem5KG7EFVb4UIDAXgrv3N2JIaffeKNtcEXkEWd/w=
 github.com/alingse/nilnesserr v0.2.0/go.mod h1:1xJPrXonEtX7wyTq8Dytns5P2hNzoWymVUIaKm4HNFg=
-github.com/amberpixels/k1 v0.2.1 h1:fAUuaVjnFBGaD9ncrRur/XLynSP0vz2YQKuEWNlNqN0=
-github.com/amberpixels/k1 v0.2.1/go.mod h1:JS8lGTKTSX8MQjWnYZQ6wjfBoU7B9iQeN1bnLhVpCpw=
+github.com/amberpixels/k1 v0.2.2 h1:fzmWSXaHA29IG13oTO/UUxI0ZZgrHU2O5N0IJ+Rm9MU=
+github.com/amberpixels/k1 v0.2.2/go.mod h1:jDhYJWmDQTUmrajDTVIL1DTjl46/zI8DS0rwApoje0E=
 github.com/amberpixels/lostfield v0.1.1 h1:v1nOWut+OwK0EZs9ndhHLzfdgj//vALU9lTG1bThcgQ=
 github.com/amberpixels/lostfield v0.1.1/go.mod h1:Rf8lXYjJJy5adct01rrl5SI1na/17gwCTd+QMwt4tJg=
 github.com/amberpixels/standardgo v0.0.1 h1:2KADzR5YPAz3VBd1ULsBQg+pnJJkyNysw5vVtiz7xuA=
@@ -470,8 +470,8 @@ github.com/nishanths/predeclared v0.2.2 h1:V2EPdZPliZymNAn79T8RkNApBjMmVKh5XRpLm
 github.com/nishanths/predeclared v0.2.2/go.mod h1:RROzoN6TnGQupbC+lqggsOlcgysk3LMK/HI84Mp280c=
 github.com/nunnatsa/ginkgolinter v0.23.0 h1:x3o4DGYOWbBMP/VdNQKgSj+25aJKx2Pe6lHr8gBcgf8=
 github.com/nunnatsa/ginkgolinter v0.23.0/go.mod h1:9qN1+0akwXEccwV1CAcCDfcoBlWXHB+ML9884pL4SZ4=
-github.com/onsi/ginkgo/v2 v2.32.0 h1:Hw7s2pVrQo/8Yz5N77qdnpHaoc+c6cC9WIV1Jce+J6E=
-github.com/onsi/ginkgo/v2 v2.32.0/go.mod h1:+aXOY+vzZ5mu2iI2HpTZUPmM//oQfsNFX6gU9kNcA44=
+github.com/onsi/ginkgo/v2 v2.28.2 h1:DTrMfpqxiNUyQ3Y0zhn1n3cOO2euFgQPYIpkWwxVFps=
+github.com/onsi/ginkgo/v2 v2.28.2/go.mod h1:CLtbVInNckU3/+gC8LzkGUb9oF+e8W8TdUsxPwvdOgE=
 github.com/onsi/gomega v1.42.1 h1:iN1rCUX+44NZ1Dc97MPoeFYbFR0vh8zxoxMFwKdyZ6I=
 github.com/onsi/gomega v1.42.1/go.mod h1:REff/hsDsodHoKlWsP2mAPhu1+5/6hVYNf9rIEBpeSg=
 github.com/otiai10/copy v1.2.0/go.mod h1:rrF5dJ5F0t/EWSYODDu4j9/vEeYHMkc8jt0zJChqQWw=

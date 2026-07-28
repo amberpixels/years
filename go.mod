@@ -3,7 +3,7 @@ module github.com/amberpixels/years
 go 1.26
 
 require (
-	github.com/amberpixels/k1 v0.2.1
+	github.com/amberpixels/k1 v0.2.2
 	github.com/djherbis/times v1.6.0
 	github.com/expectto/be v1.0.0-rc.8
 )
