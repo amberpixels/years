@@ -4,23 +4,32 @@
 # Blocks between `# >>> justx:<id>` and `# <<< justx:<id>` are managed by justx.
 # Edit anything outside the fences freely; `j @upgrade` (v2) re-syncs managed blocks.
 
-# >>> justx:fmt (managed) — `j @upgrade` re-syncs; remove these fences to take over
+# standardgo carries the ruleset and the golangci-lint engine in one binary, so this
+# repo holds no lint config of its own. It is run via `go run`, not a go.mod tool
+# directive, to keep it out of this library's dependency graph.
+# The fmt/lint/fix fences are removed for the same reason - they must not resync.
+standardgo := "github.com/amberpixels/standardgo/cmd/standardgo@v0.1.1"
+
+# The floor this library promises to support. Keep in sync with the `go` directive
+# in go.mod - that is the number consumers actually see. CI passes FLOOR_GO=local,
+# having already installed the floor toolchain, so it never downloads a second one.
+floor_go := env("FLOOR_GO", "go1.25.0")
+
+# Default recipe: format. Rewrites files, but decides nothing - every change it
+# makes is mechanical. `just fix` is the one that applies judgement.
+default: fmt
+
 # format Go code - rewrites to canonical form
 fmt:
-    go tool standardgo fmt ./...
-# <<< justx:fmt
+    go run {{ standardgo }} fmt ./...
 
-# >>> justx:lint (managed) — `j @upgrade` re-syncs; remove these fences to take over
 # lint Go code - reports findings, changes nothing
 lint:
-    go tool standardgo ./...
-# <<< justx:lint
+    go run {{ standardgo }} ./...
 
-# >>> justx:fix (managed) — `j @upgrade` re-syncs; remove these fences to take over
 # auto-fix what can be fixed - run on a clean tree and read the diff
 fix:
-    go tool standardgo ./... --fix
-# <<< justx:fix
+    go run {{ standardgo }} ./... --fix
 
 # >>> justx:test (managed) — `j @upgrade` re-syncs; remove these fences to take over
 # run tests
@@ -28,13 +37,17 @@ test:
     go test ./...
 # <<< justx:test
 
+# check that the go.mod floor still builds and vets. vet compiles the tests too,
+# so this covers the test dependencies at the floor as well.
+floor:
+    GOWORK=off GOTOOLCHAIN={{ floor_go }} go build ./...
+    GOWORK=off GOTOOLCHAIN={{ floor_go }} go vet ./...
+
 # >>> justx:build (managed) — `j @upgrade` re-syncs; remove these fences to take over
 # build
 build:
     go build ./...
 # <<< justx:build
 
-# >>> justx:ci (managed) — `j @upgrade` re-syncs; remove these fences to take over
 # run all checks - read-only, safe for CI
-ci: lint test
-# <<< justx:ci
+ci: lint test floor
