@@ -10,10 +10,11 @@
 # The fmt/lint/fix fences are removed for the same reason - they must not resync.
 standardgo := "github.com/amberpixels/standardgo/cmd/standardgo@v0.1.1"
 
-# The floor this library promises to support. Keep in sync with the `go` directive
-# in go.mod - that is the number consumers actually see. CI passes FLOOR_GO=local,
+# The floor this library promises to support. Deliberately NOT read from go.mod: go.mod
+# is the thing under test, so raising the `go` directive must fail `just floor` until
+# this line is raised to match. Keep the two in sync by hand. CI passes FLOOR_GO=local,
 # having already installed the floor toolchain, so it never downloads a second one.
-floor_go := env("FLOOR_GO", "go1.25.0")
+floor_go := env("FLOOR_GO", "go1.26.0")
 
 # Default recipe: format. Rewrites files, but decides nothing - every change it
 # makes is mechanical. `just fix` is the one that applies judgement.
