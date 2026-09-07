@@ -19,9 +19,9 @@ jobs:
           go-version-file: go.mod
           # Caches GOMODCACHE and GOCACHE, which is what keeps `just lint` from
           # recompiling the golangci-lint engine inside standardgo on every run.
-          # The justfile is in the key because it pins the standardgo version:
-          # without it the key never changes, the cache is never re-saved, and a
-          # version bump would rebuild from scratch on every run forever after.
+          # Caveat since standardgo went @latest: no file here changes when it releases,
+          # so the key holds, the cache is restored but never re-saved, and every run
+          # rebuilds the engine until go.sum or the justfile changes for another reason.
           cache-dependency-path: |
             go.sum
             justfile

@@ -8,7 +8,10 @@
 # repo holds no lint config of its own. It is run via `go run`, not a go.mod tool
 # directive, to keep it out of this library's dependency graph.
 # The fmt/lint/fix fences are removed for the same reason - they must not resync.
-standardgo := "github.com/amberpixels/standardgo/cmd/standardgo@v0.1.1"
+# @latest rather than a pin: standardgo is in no go.mod, so dependabot cannot see it and
+# nothing here would ever bump it. The trade is reproducibility - a standardgo release
+# can turn CI red on a PR that changed nothing.
+standardgo := "github.com/amberpixels/standardgo/cmd/standardgo@latest"
 
 # The floor this library promises to support. Deliberately NOT read from go.mod: go.mod
 # is the thing under test, so raising the `go` directive must fail `just floor` until
