@@ -43,11 +43,13 @@ func (p Period) Contains(t time.Time) bool {
 // one entry per core alias family (day, week, month, year). Weekend aliases
 // are handled separately in periodForAlias.
 //
-//nolint:gochecknoglobals // read-only span table, mirrors coreAliases
+//nolint:gochecknoglobals // read-only span table, mirrors coreAliasesFor
 var aliasPeriodSpans = map[string]func(start time.Time) time.Time{
 	"today":     nextDay,
 	"yesterday": nextDay,
 	"tomorrow":  nextDay,
+
+	aliasLastWorkday: nextDay,
 
 	"this-week": nextWeek,
 	"last-week": nextWeek,
