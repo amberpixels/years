@@ -70,7 +70,9 @@ t, _ = years.JustParse("next-week")
 t, _ = years.Parse("2006-01-02", "2024-05-26")
 ```
 
-Aliases resolve against the package clock: `today`, `yesterday`, `tomorrow`, `this-week`, `last-week`, `next-week`, `last-weekend`, `next-weekend`, `this-month`, `last-month`, `next-month`, `this-year`, `last-year`, `next-year`.
+Aliases resolve against the package clock: `today`, `yesterday`, `tomorrow`, `last-workday`, `this-week`, `last-week`, `next-week`, `last-weekend`, `next-weekend`, `this-month`, `last-month`, `next-month`, `this-year`, `last-year`, `next-year`.
+
+`last-workday` is the most recent working day before today: on a Monday, that is Friday. Weeks start on Sunday and working days are Monday to Friday unless a parser says otherwise with `WithWeekStart` and `WithWorkdays`.
 
 Layouts may also contain a timestamp part: `U@` for unix seconds, `U@000` for milliseconds, `U@000000` / `U@000000000` for micro/nanoseconds:
 
@@ -90,7 +92,16 @@ The global parser is configurable too - `SetParserDefaults` replaces its options
 ```go
 years.ExtendParserDefaults(years.WithLayouts("2006, Jan 2"))
 t, _ = years.JustParse("2020, Dec 1")
+
+// Monday-start weeks and a Sunday-to-Thursday working week:
+years.ExtendParserDefaults(
+	years.WithWeekStart(time.Monday),
+	years.WithWorkdays(time.Sunday, time.Monday, time.Tuesday, time.Wednesday, time.Thursday),
+)
+period, _ := years.JustParsePeriod("last-workday")
 ```
+
+Options passed to `NewParser` replace the defaults rather than add to them, so a custom parser that should resolve aliases lists `AcceptAliases()` alongside `WithWeekStart` or `WithWorkdays`.
 
 ## Formatting
 

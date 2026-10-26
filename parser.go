@@ -24,7 +24,13 @@ type Parser struct {
 	clock   Clock
 	layouts []string
 
-	aliases map[string]func(time.Time) time.Time
+	weekStart time.Weekday
+	workdays  [daysInWeek]bool
+
+	// aliases is the resolved table: core aliases for this parser's config with
+	// customAliases on top. NewParser builds it once all options have run.
+	aliases       map[string]func(time.Time) time.Time
+	customAliases map[string]func(time.Time) time.Time
 }
 
 func WithLayouts(layouts ...string) ParserOption {
@@ -48,17 +54,47 @@ func AcceptRelativeOffsets() ParserOption {
 }
 
 // WithCustomAliases merges the given aliases into the parser's alias table
-// (custom entries win over same-named core ones). The parser's table is
-// cloned first: the shared core alias map and the caller's map both stay
-// untouched.
+// (custom entries win over same-named core ones). The caller's map is copied,
+// never mutated, and the option may be given more than once.
 func WithCustomAliases(customAliases map[string]func(time.Time) time.Time) ParserOption {
 	return func(p *Parser) {
-		merged := maps.Clone(p.aliases)
+		merged := maps.Clone(p.customAliases)
 		if merged == nil {
 			merged = make(map[string]func(time.Time) time.Time, len(customAliases))
 		}
 		maps.Copy(merged, customAliases)
-		p.aliases = merged
+		p.customAliases = merged
+	}
+}
+
+// WithWeekStart sets the weekday the week-based aliases ("this-week",
+// "last-week", "next-week") start on. Defaults to time.Sunday. A value outside
+// Sunday..Saturday leaves the week start unchanged.
+func WithWeekStart(d time.Weekday) ParserOption {
+	return func(p *Parser) {
+		if d >= time.Sunday && d <= time.Saturday {
+			p.weekStart = d
+		}
+	}
+}
+
+// WithWorkdays sets which weekdays are working days, used by the
+// "last-workday" alias. Defaults to Monday through Friday. The given days
+// replace the set; called with no valid days it leaves the set unchanged,
+// as an empty working week has no last working day.
+func WithWorkdays(days ...time.Weekday) ParserOption {
+	return func(p *Parser) {
+		var set [daysInWeek]bool
+		var found bool
+		for _, d := range days {
+			if d >= time.Sunday && d <= time.Saturday {
+				set[d] = true
+				found = true
+			}
+		}
+		if found {
+			p.workdays = set
+		}
 	}
 }
 
@@ -107,8 +143,9 @@ func ExtendParserDefaults(opts ...ParserOption) {
 
 func NewParser(options ...ParserOption) *Parser {
 	p := &Parser{
-		clock:   stdClock,
-		aliases: coreAliases,
+		clock:     stdClock,
+		weekStart: time.Sunday,
+		workdays:  defaultWorkdays(),
 	}
 
 	if len(options) == 0 {
@@ -117,6 +154,15 @@ func NewParser(options ...ParserOption) *Parser {
 
 	for _, opt := range options {
 		opt(p)
+	}
+
+	// Built after the options so week start and working days apply regardless
+	// of option order, and custom aliases still win over core ones.
+	if p.weekStart == time.Sunday && p.workdays == defaultWorkdays() && len(p.customAliases) == 0 {
+		p.aliases = defaultCoreAliases
+	} else {
+		p.aliases = coreAliasesFor(p.weekStart, p.workdays)
+		maps.Copy(p.aliases, p.customAliases)
 	}
 
 	return p

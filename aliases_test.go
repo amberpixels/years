@@ -53,6 +53,10 @@ func TestCoreAliases(t *testing.T) {
 			time.Date(2025, time.May, 2, 0, 0, 0, 0, time.UTC),
 		},
 		{
+			"last-workday", "last-workday",
+			time.Date(2025, time.May, 6, 0, 0, 0, 0, time.UTC),
+		},
+		{
 			"this-month", "this-month",
 			time.Date(2025, time.May, 1, 0, 0, 0, 0, time.UTC),
 		},
