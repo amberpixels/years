@@ -216,3 +216,34 @@ func TestParser_WildcardAfterStrictLayouts(t *testing.T) {
 	be.Require(t, err).To(be.Succeed())
 	be.Expect(t, got).To(be.Eq(time.Date(2025, time.April, 24, 0, 0, 0, 0, time.UTC)))
 }
+
+func TestParser_TimestampLayouts(t *testing.T) {
+	want := time.Date(2024, time.June, 8, 13, 13, 37, 0, time.UTC)
+
+	cases := []struct {
+		name   string
+		unit   years.ParserOption
+		layout string
+		value  string
+	}{
+		{"seconds", years.AcceptUnixSeconds(), "logs-U@.log", "logs-1717852417.log"},
+		{"milliseconds", years.AcceptUnixMilli(), "logs-U@000.log", "logs-1717852417000.log"},
+	}
+	for _, tc := range cases {
+		strict := years.NewParser(tc.unit)
+		got, err := strict.Parse(tc.layout, tc.value)
+		be.Require(t, err).To(be.Succeed(), "strict %s", tc.name)
+		be.Expect(t, got).To(be.Eq(want), "strict %s", tc.name)
+
+		list := years.NewParser(tc.unit, years.WithLayouts(tc.layout))
+		got, err = list.JustParse(tc.value)
+		be.Require(t, err).To(be.Succeed(), "list %s", tc.name)
+		be.Expect(t, got).To(be.Eq(want), "list %s", tc.name)
+	}
+
+	// A value the timestamp layout does not fit falls through to the next layout.
+	parser := years.NewParser(years.AcceptUnixMilli(), years.WithLayouts("logs-U@000.log", "2006-01-02 15:04"))
+	got, err := parser.JustParse("2024-06-08 13:13")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, got).To(be.Eq(time.Date(2024, time.June, 8, 13, 13, 0, 0, time.UTC)))
+}

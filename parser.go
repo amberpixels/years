@@ -302,8 +302,8 @@ func (p *Parser) Parse(layout, value string) (time.Time, error) {
 				continue
 			}
 
-			afterTimestamp := layout[end:]
-			beforeTimestamp := layout[:start]
+			afterTimestamp := l[end:]
+			beforeTimestamp := l[:start]
 
 			// Strip the layout's literal prefix and suffix, leaving the digits.
 			cleanValue := value

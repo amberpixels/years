@@ -236,6 +236,9 @@ func findTimestampPart(layout string) (int, int) {
 	case strings.Contains(layout, LayoutTimestampMilliseconds):
 		start = strings.Index(layout, LayoutTimestampMilliseconds)
 		end = start + len(LayoutTimestampMilliseconds)
+	default:
+		start = strings.Index(layout, LayoutTimestampSeconds)
+		end = start + len(LayoutTimestampSeconds)
 	}
 
 	return start, end
