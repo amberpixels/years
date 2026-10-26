@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 type ParserOption func(*Parser)
@@ -280,6 +281,10 @@ func (p *Parser) Parse(layout, value string) (time.Time, error) {
 	}
 	for _, l := range layouts {
 		layoutDetails := ParseLayout(l)
+		if layoutDetails == nil {
+			// No date unit in the layout, e.g. a bare "*".
+			return time.Time{}, fmt.Errorf("unknown layout format: %s", l)
+		}
 
 		switch layoutDetails.Format {
 		case LayoutFormatGo:
@@ -297,8 +302,8 @@ func (p *Parser) Parse(layout, value string) (time.Time, error) {
 				continue
 			}
 
-			afterTimestamp := layout[end:]
-			beforeTimestamp := layout[:start]
+			afterTimestamp := l[end:]
+			beforeTimestamp := l[:start]
 
 			// Strip the layout's literal prefix and suffix, leaving the digits.
 			cleanValue := value
@@ -349,10 +354,64 @@ func (p *Parser) now() time.Time {
 	return p.clock.Now()
 }
 
-// parseGoLayout parses value with a Go layout, in the parser's location when
-// one is set and in UTC otherwise. A date-only value in the location starts at
-// the day's first instant.
+// parseGoLayout parses value with a Go layout that may start and/or end with
+// a wildcard. A trailing wildcard tries the longest prefix of value first and a
+// leading one the shortest skip, so variable-width fields keep every digit;
+// with both, the longest substring wins, leftmost first.
 func (p *Parser) parseGoLayout(layout, value string) (time.Time, error) {
+	w, ok := splitWildcards(layout)
+	if !ok {
+		return time.Time{}, errMisplacedWildcard
+	}
+	if !w.leading && !w.trailing {
+		return p.parseGoLayoutExact(layout, value)
+	}
+
+	// Error of the whole value against the core: it names the offending text.
+	t, firstErr := p.parseGoLayoutExact(w.core, value)
+	if firstErr == nil {
+		return t, nil
+	}
+
+	n := len(value)
+	maxLen := min(n-1, w.maxMatchLen())
+	isCut := func(i int) bool { return i == n || utf8.RuneStart(value[i]) }
+	parse := func(start, end int) (time.Time, bool) {
+		if !isCut(start) || !isCut(end) {
+			return time.Time{}, false
+		}
+		t, err := p.parseGoLayoutExact(w.core, value[start:end])
+		return t, err == nil
+	}
+	switch {
+	case !w.leading:
+		for end := maxLen; end > 0; end-- {
+			if t, ok := parse(0, end); ok {
+				return t, nil
+			}
+		}
+	case !w.trailing:
+		for start := n - maxLen; start < n; start++ {
+			if t, ok := parse(start, n); ok {
+				return t, nil
+			}
+		}
+	default:
+		for length := maxLen; length > 0; length-- {
+			for start := 0; start+length <= n; start++ {
+				if t, ok := parse(start, start+length); ok {
+					return t, nil
+				}
+			}
+		}
+	}
+	return time.Time{}, firstErr
+}
+
+// parseGoLayoutExact parses value with a Go layout, in the parser's location
+// when one is set and in UTC otherwise. A date-only value in the location
+// starts at the day's first instant.
+func (p *Parser) parseGoLayoutExact(layout, value string) (time.Time, error) {
 	if p.location == nil {
 		return time.Parse(layout, value)
 	}

@@ -164,7 +164,7 @@ func (p *Parser) ParsePeriod(layout, value string) (Period, error) {
 		layouts = []string{layout}
 	}
 	for _, l := range layouts {
-		if ParseLayout(l).Format != LayoutFormatGo {
+		if details := ParseLayout(l); details == nil || details.Format != LayoutFormatGo {
 			continue
 		}
 		t, err := p.parseGoLayout(l, value)

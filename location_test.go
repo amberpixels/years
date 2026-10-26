@@ -222,3 +222,18 @@ func TestWithLocation_GlobalDefaults(t *testing.T) {
 	be.Require(t, err).To(be.Succeed())
 	be.Expect(t, period.Start.String()).To(be.Eq(time.Date(2026, time.October, 21, 0, 0, 0, 0, chisinau).String()))
 }
+
+func TestWithLocation_Wildcards(t *testing.T) {
+	chisinau := mustLoadLocation(t, "Europe/Chisinau")
+	now := time.Date(2026, time.October, 20, 12, 0, 0, 0, time.UTC)
+	parser := periodTestParser(now, years.WithLocation(chisinau))
+
+	got, err := parser.Parse("2006-01-02 15:04*", "2026-10-20 09:00 local")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, got.String()).To(be.Eq(time.Date(2026, time.October, 20, 9, 0, 0, 0, chisinau).String()))
+
+	day, err := parser.ParsePeriod("2006-01-02*", "2026-10-20 (Tuesday)")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, day.Start.String()).To(be.Eq(time.Date(2026, time.October, 20, 0, 0, 0, 0, chisinau).String()))
+	be.Expect(t, day.End.String()).To(be.Eq(time.Date(2026, time.October, 21, 0, 0, 0, 0, chisinau).String()))
+}
