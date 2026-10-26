@@ -256,6 +256,15 @@ type wildcardLayout struct {
 	leading, trailing bool
 }
 
+// maxMatchLen bounds the text the core layout can match, so the wildcard
+// search never tries wider candidates. A Go layout token reads at most twice
+// its width ("1" reads "12", "Monday" reads "Wednesday"); the slack covers
+// zone names and the fractional seconds Go accepts after a seconds field.
+func (w wildcardLayout) maxMatchLen() int {
+	const slack = 32
+	return 2*len(w.core) + slack
+}
+
 // splitWildcards strips one layoutWildcard from each edge of layout. It
 // reports false when a wildcard is left in the core, or the core is empty.
 func splitWildcards(layout string) (wildcardLayout, bool) {

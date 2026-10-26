@@ -2,6 +2,7 @@ package years_test
 
 import (
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -246,4 +247,32 @@ func TestParser_TimestampLayouts(t *testing.T) {
 	got, err := parser.JustParse("2024-06-08 13:13")
 	be.Require(t, err).To(be.Succeed())
 	be.Expect(t, got).To(be.Eq(time.Date(2024, time.June, 8, 13, 13, 0, 0, time.UTC)))
+}
+
+func TestParser_WildcardLongValueFailsFast(t *testing.T) {
+	parser := years.NewParser()
+	cases := []struct {
+		layout string
+		size   int
+	}{
+		{"2006-01-02*", 200_000},
+		{"*2006-01-02", 200_000},
+		{"*2006-01-02*", 16_000},
+	}
+	for _, tc := range cases {
+		start := time.Now()
+		_, err := parser.Parse(tc.layout, strings.Repeat("1", tc.size))
+		be.Expect(t, err).To(be.HaveOccurred(), "%q", tc.layout)
+		be.Expect(t, time.Since(start) < time.Second).To(be.Eq(true), "%q took %s", tc.layout, time.Since(start))
+	}
+}
+
+func TestParser_LayoutWithoutDateUnit(t *testing.T) {
+	for _, layout := range []string{"*", "15:04"} {
+		_, err := years.NewParser(years.WithLayouts(layout)).JustParse("2025-04-24")
+		be.Expect(t, err).To(be.HaveOccurred(), "JustParse with %q", layout)
+
+		_, err = years.NewParser().ParsePeriod(layout, "2025-04-24")
+		be.Expect(t, err).To(be.HaveOccurred(), "ParsePeriod with %q", layout)
+	}
 }

@@ -95,7 +95,7 @@ t, _ = years.Parse("Mon Jan 02 2006 15:04:05 GMT-0700*",
 t, _ = years.Parse("*2006-01-02*", "[2025-04-24]")
 ```
 
-`*` is allowed only as the first or last character; anywhere else the layout is an error. A trailing `*` keeps the longest prefix that parses and a leading `*` the shortest skip, so `2006-1-2*` reads `2025-4-24 x` as April 24, not April 2. With both, the longest substring that parses wins, leftmost first. Wildcard layouts are lenient, so in a `WithLayouts` list put them after the strict ones.
+`*` is allowed only as the first or last character. `Parse` with a layout that has `*` anywhere else returns an error; in a `WithLayouts` list such a layout never matches. A trailing `*` keeps the longest prefix that parses and a leading `*` the shortest skip, so `2006-1-2*` reads `2025-4-24 x` as April 24, not April 2. With both, the longest substring that parses wins, leftmost first. Wildcard layouts are lenient, so in a `WithLayouts` list put them after the strict ones.
 
 For the global parser, `SetParserDefaults` replaces its options, `ExtendParserDefaults` appends, and `ResetParserDefaults` restores the built-in behavior:
 

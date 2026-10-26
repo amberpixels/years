@@ -374,18 +374,34 @@ func (p *Parser) parseGoLayout(layout, value string) (time.Time, error) {
 	}
 
 	n := len(value)
+	maxLen := min(n-1, w.maxMatchLen())
 	isCut := func(i int) bool { return i == n || utf8.RuneStart(value[i]) }
-	for length := n - 1; length > 0; length-- {
-		for start := 0; start+length <= n; start++ {
-			end := start + length
-			if (start > 0 && !w.leading) || (end < n && !w.trailing) {
-				continue
-			}
-			if !isCut(start) || !isCut(end) {
-				continue
-			}
-			if t, err := p.parseGoLayoutExact(w.core, value[start:end]); err == nil {
+	parse := func(start, end int) (time.Time, bool) {
+		if !isCut(start) || !isCut(end) {
+			return time.Time{}, false
+		}
+		t, err := p.parseGoLayoutExact(w.core, value[start:end])
+		return t, err == nil
+	}
+	switch {
+	case !w.leading:
+		for end := maxLen; end > 0; end-- {
+			if t, ok := parse(0, end); ok {
 				return t, nil
+			}
+		}
+	case !w.trailing:
+		for start := n - maxLen; start < n; start++ {
+			if t, ok := parse(start, n); ok {
+				return t, nil
+			}
+		}
+	default:
+		for length := maxLen; length > 0; length-- {
+			for start := 0; start+length <= n; start++ {
+				if t, ok := parse(start, start+length); ok {
+					return t, nil
+				}
 			}
 		}
 	}
