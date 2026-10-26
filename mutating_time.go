@@ -112,7 +112,7 @@ func (mt *MutatingTime) SetDay(day int) *MutatingTime {
 	return mt
 }
 
-// SetHour sets the hour (0–23). Panics if out of range.
+// SetHour sets the hour (0-23). Panics if out of range.
 func (mt *MutatingTime) SetHour(hour int) *MutatingTime {
 	if hour < 0 || hour > 23 {
 		panic("SetHour accepts hour in [0,23]")
@@ -125,7 +125,7 @@ func (mt *MutatingTime) SetHour(hour int) *MutatingTime {
 	return mt
 }
 
-// SetMinute sets the minute (0–59). Panics if out of range.
+// SetMinute sets the minute (0-59). Panics if out of range.
 func (mt *MutatingTime) SetMinute(minute int) *MutatingTime {
 	if minute < 0 || minute > 59 {
 		panic("SetMinute accepts minute in [0,59]")
@@ -138,7 +138,7 @@ func (mt *MutatingTime) SetMinute(minute int) *MutatingTime {
 	return mt
 }
 
-// SetSecond sets the second (0–59). Panics if out of range.
+// SetSecond sets the second (0-59). Panics if out of range.
 func (mt *MutatingTime) SetSecond(second int) *MutatingTime {
 	if second < 0 || second > 59 {
 		panic("SetSecond accepts second in [0,59]")
@@ -151,7 +151,7 @@ func (mt *MutatingTime) SetSecond(second int) *MutatingTime {
 	return mt
 }
 
-// SetMillisecond sets the millisecond (0–999) by overriding the nanosecond field.
+// SetMillisecond sets the millisecond (0-999) by overriding the nanosecond field.
 // Panics if out of range.
 func (mt *MutatingTime) SetMillisecond(ms int) *MutatingTime {
 	if ms < 0 || ms > 999 {
@@ -165,7 +165,7 @@ func (mt *MutatingTime) SetMillisecond(ms int) *MutatingTime {
 	return mt
 }
 
-// SetNanosecond sets the nanosecond (0–999,999,999). Panics if out of range.
+// SetNanosecond sets the nanosecond (0-999,999,999). Panics if out of range.
 func (mt *MutatingTime) SetNanosecond(nano int) *MutatingTime {
 	if nano < 0 || nano > 999_999_999 {
 		panic("SetNanosecond accepts nanosecond in [0,999999999]")

@@ -12,8 +12,8 @@ import (
 // iso8601DurationRe matches the fixed-length subset of ISO-8601 durations used by
 // media APIs (notably YouTube's contentDetails.duration): an optional day
 // component plus a time component of hours/minutes/seconds, e.g. "PT15M30S",
-// "P1DT2H3M4S", "PT45S". Weeks/months/years are intentionally unsupported — they
-// are calendar quantities, not fixed durations, so they can't map to a Duration.
+// "P1DT2H3M4S", "PT45S". Weeks, months and years are unsupported: they are
+// calendar quantities, not fixed durations, so they can't map to a Duration.
 var iso8601DurationRe = regexp.MustCompile(
 	`^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$`,
 )

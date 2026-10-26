@@ -6,11 +6,11 @@ import (
 
 // WaypointString is a Waypoint implementation for a string that represents time.
 type WaypointString struct {
-	// timeInput is the full input that is using for time.Parse()
+	// timeInput is the full input passed to Parse.
 	timeInput string
 
-	// layout is a layout to be used for parsing time
-	// If not specified, default parser will be used (with default layouts)
+	// layout is the layout to parse timeInput with; empty means the default
+	// parser's layouts.
 	layout string
 
 	// t is the time of the waypoint

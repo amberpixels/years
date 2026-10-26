@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// DateUnit stays for the unit of a date like Day/Month/Year/etc.
+// DateUnit is the unit of a date (Day, Month, Year) or of a unix timestamp.
 type DateUnit int
 
 const UnitUndefined DateUnit = 0
@@ -58,7 +58,7 @@ func (du DateUnit) Defined() bool { return du != UnitUndefined }
 
 // DateUnitsDict holds all available DateUnits.
 //
-//nolint:gochecknoglobals // it's ok
+//nolint:gochecknoglobals // read-only enum dictionary
 var DateUnitsDict = struct {
 	Day   DateUnit
 	Month DateUnit
@@ -88,7 +88,7 @@ const LayoutFormatUndefined LayoutFormat = 0
 const (
 	// LayoutFormatGo is a format that is supported by Go time.Parse.
 	LayoutFormatGo LayoutFormat = 1 << iota
-	// LayoutFormatUnixTimestamp is a format that parses time from Unix timestamp (seconds or milliseconds).
+	// LayoutFormatUnixTimestamp is a format that parses time from a Unix timestamp (seconds to nanoseconds).
 	LayoutFormatUnixTimestamp
 
 	// TODO(nice-to-have): support more formats, e.g. JS-like formats (YYYY, etc).
@@ -109,7 +109,7 @@ func (lf LayoutFormat) String() string {
 
 // LayoutFormatDict holds all available LayoutFormats.
 //
-//nolint:gochecknoglobals // it's ok
+//nolint:gochecknoglobals // read-only enum dictionary
 var LayoutFormatDict = struct {
 	GoFormat      LayoutFormat
 	UnixTimestamp LayoutFormat
@@ -125,8 +125,8 @@ const (
 	LayoutTimestampNanoseconds  = "U@000000000"
 )
 
-// LayoutDetails stores parsed meta information about given layout string.
-// e.g. "2006-02-01".
+// LayoutDetails stores parsed meta information about a layout string such as
+// "2006-01-02".
 type LayoutDetails struct {
 	// MinimalUnit e.g. Day for "2006-01-02" and Month for "2006-01"
 	MinimalUnit DateUnit
@@ -142,9 +142,9 @@ func (lm *LayoutDetails) HasUnit(q DateUnit) bool {
 	return slices.Contains(lm.Units, q)
 }
 
-// ParseLayout parses given layout string and returns LayoutDetails.
-//
-// Note: it's a pretty hacky/weak function, but we're OK with it for now.
+// ParseLayout parses given layout string and returns LayoutDetails, or nil
+// when it finds no date unit. Units are found by substring heuristics, so an
+// unusual layout can be misread.
 func ParseLayout(layout string) *LayoutDetails {
 	result := &LayoutDetails{Units: make([]DateUnit, 0)}
 
@@ -209,17 +209,16 @@ func ParseLayout(layout string) *LayoutDetails {
 	}
 
 	if len(result.Units) == 0 {
-		// temporary very simple way of saying it's not a valid layout
 		return nil
 	}
 
-	// for now, we only support Go-format here
 	result.Format = LayoutFormatGo
 	return result
 }
 
-// find position (start,end) of the timestamp part in the layout (e.g. `U0.` or `U0.000` etc ).
-// e.g. `FileName_U0.txt` -> [10, 13].
+// findTimestampPart returns the [start, end) byte range of the timestamp token
+// in layout, e.g. `foobar_U@000.log` gives 7, 12. It returns 0, 0 when the
+// layout has none.
 func findTimestampPart(layout string) (int, int) {
 	if !strings.Contains(layout, LayoutTimestampSeconds) {
 		return 0, 0

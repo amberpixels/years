@@ -9,12 +9,13 @@ import (
 	"time"
 )
 
-// TimeNamedWaypointFile is a Waypoint implementation for files/directories.
+// TimeNamedWaypointFile is a Waypoint for files/directories whose time is
+// parsed from their names, joined with their parents' names when needed.
 type TimeNamedWaypointFile struct {
 	*WaypointFile
 
-	// timeInput is the full input that is using for time.Parse()
-	// Usually it's considered to be file/dir name + names of parents (if necessary)
+	// timeInput is the full input passed to Parse: the file/dir name, prefixed
+	// with the parents' names when the layout needs them.
 	timeInput string
 
 	// layout is a full layout (knowing required parent's layout information)
@@ -71,7 +72,6 @@ func NewTimeNamedWaypointFile(
 	}
 
 	if w.fileInfo.IsDir() {
-		// Go deeper in the directory
 		innerPaths, err := filepath.Glob(filepath.Join(w.path, "*"))
 		if err != nil {
 			return nil, err
@@ -85,7 +85,7 @@ func NewTimeNamedWaypointFile(
 				continue
 			}
 
-			// By default, let's sort nodes in Past->Future order
+			// Insert in place so children stay sorted oldest first.
 			var inserted bool
 			for i, existed := range w.waypoints {
 				if existed.Time().After(child.t) {

@@ -142,13 +142,10 @@ func setupFiletimeTree(t *testing.T) {
 	write(second, "Hello there (second)")
 	write(third, "Hello there (third)")
 
-	// Two Chtimes passes, both with directories after files (each write above
-	// bumped its parent's mod time):
-	//
-	// Pass A shapes BIRTH times. On Linux Chtimes never touches btime and the
-	// creation order above already matches; on macOS/APFS setting an mtime
-	// older than the birth time lowers the birth time to it, so this pass
-	// deliberately plants old, ascending stamps in birth order.
+	// Pass A shapes BIRTH times. Linux Chtimes never touches btime, but on
+	// macOS/APFS an mtime older than the birth time lowers the birth time to
+	// it, so this plants old, ascending stamps in creation order. Both passes
+	// put directories after files, since each write bumped its parent's mtime.
 	base := time.Now().Add(-2 * time.Hour)
 	for i, p := range []string{root, foobar, first, second, third} {
 		ts := base.Add(time.Duration(i) * time.Minute)
@@ -342,10 +339,8 @@ func TestVoyager_TimeNamedFile_Calendar1(t *testing.T) {
 
 func TestVoyager_TimeNamedFile_Calendar2(t *testing.T) {
 	const testCalendarLayout = "2006/Jan/02 Mon.txt"
-	// Calendar2 final files are not sufficient for knowing the date on their own
-	// (they require parent information), e.g. 2006/Jan/01 Mon.txt.
-	// "2006-01-02" is included so the Navigate query ("2024-03-06") can be parsed —
-	// the file names themselves use "02 Mon".
+	// Calendar2 file names ("02 Mon") need their parents to know the date.
+	// "2006-01-02" is only there so the Navigate query ("2024-03-06") parses.
 	voyagerSetup(t, "2006", "Jan", "02 Mon", "2006-01-02")
 	calendarPath := filepath.Join(TestDataPath, "calendar2")
 

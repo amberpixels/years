@@ -30,11 +30,10 @@ func defaultWorkdays() [daysInWeek]bool {
 var defaultCoreAliases = coreAliasesFor(time.Sunday, defaultWorkdays())
 
 // coreAliasesFor returns a fresh table of the built-in aliases for the given
-// week start and working days.
-// Aliases that are timezone-dependent by default use timezone of given base time
+// week start and working days. Every alias resolves on base's calendar, in
+// base's location.
 //
-// TODO(nice-to-have): refactor keys are not just hardcoded strings,
-// but should be language-depended, so they can be translated.
+// TODO(nice-to-have): make the keys translatable instead of hardcoded English.
 func coreAliasesFor(weekStart time.Weekday, workdays [daysInWeek]bool) map[string]func(time.Time) time.Time {
 	return map[string]func(time.Time) time.Time{
 		"today": func(base time.Time) time.Time {
@@ -57,8 +56,7 @@ func coreAliasesFor(weekStart time.Weekday, workdays [daysInWeek]bool) map[strin
 			day := dayStartFrom(base, daysInWeek)
 			return Mutate(&day).TruncateToWeek(weekStart).Time()
 		},
-		// to avoid misunderstanding we deliberately do not have `this-weekend` alias
-		// as it can be considered as both "following weekend" or "previous weekend"
+		// There is no this-weekend: it reads as either the coming or the past one.
 		aliasNextWeekend: func(base time.Time) time.Time {
 			return dayStartFrom(base, daysUntilSaturday(base))
 		},

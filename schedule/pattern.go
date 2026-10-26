@@ -59,8 +59,7 @@ type WeekPatterns []WeekPattern
 func (p WeekPattern) Contains(t time.Time) bool {
 	minuteOfDay := t.Hour()*minutesPerHour + t.Minute()
 
-	// A span ends before the second midnight of its attribution day, so only
-	// t's own date (daysAgo=0) and the previous date (daysAgo=1) can own t.
+	// Only t's own date and the previous one can own t (see maxSpanEndMinute).
 	for daysAgo := range 2 {
 		day := time.Weekday((int(t.Weekday()) + daysInWeek - daysAgo) % daysInWeek)
 		if len(p.Days) > 0 && !slices.Contains(p.Days, day) {

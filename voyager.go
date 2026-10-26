@@ -24,8 +24,6 @@ func NewVoyager(root Waypoint, parserArg ...*Parser) *Voyager {
 	return v
 }
 
-// Traversing means walking through voyager's prepared tree.
-
 // TraverseDirection is a direction for traversing (e.g. past or future).
 type TraverseDirection string
 
@@ -49,7 +47,7 @@ type traverseConfig struct {
 	includeNonCalendarNodes bool
 }
 
-// defaultTraverseConfig is Future->Past + all type of nodes.
+// defaultTraverseConfig walks newest to oldest over every kind of node.
 func defaultTraverseConfig() traverseConfig {
 	return traverseConfig{
 		direction: TraverseDirectionPast,
@@ -115,7 +113,6 @@ func (v *Voyager) Traverse(cb func(w Waypoint), opts ...TraverseOption) error {
 		opt(&config)
 	}
 
-	// directionSign will be used in sorting func
 	var directionSign int
 	switch config.direction {
 	case TraverseDirectionPast:
@@ -176,8 +173,8 @@ func (v *Voyager) Navigate(to string) (Waypoint, error) {
 	return found, nil
 }
 
-// Find returns the all found Waypoints that match given time (as a string)
-// e.g. Find("yesterday") returns all waypoints whose time is in the "yesterday" range.
+// Find returns every Waypoint whose time equals the parsed timeStr, e.g.
+// Find("yesterday") returns all waypoints at the start of yesterday.
 func (v *Voyager) Find(timeStr string) ([]Waypoint, error) {
 	navigateTo, err := v.parser.Parse("", timeStr)
 	if err != nil {

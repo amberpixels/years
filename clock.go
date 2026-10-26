@@ -10,11 +10,11 @@ type StdClock struct{}
 
 func (c *StdClock) Now() time.Time { return time.Now() }
 
-//nolint:gochecknoglobals // it's ok
+//nolint:gochecknoglobals // package clock, swappable via SetStdClock
 var stdClock Clock = &StdClock{}
 
-// SetStdClock sets the default clock to use.
-// Note: this considered to be called from tests, so time.Now() is mockable.
+// SetStdClock sets the package clock. It is meant for tests, to make
+// time.Now() mockable.
 func SetStdClock(c Clock) { stdClock = c }
 
 // Now returns the current time according to the package-level clock.

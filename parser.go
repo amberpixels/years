@@ -52,7 +52,7 @@ func AcceptAliases() ParserOption {
 
 // AcceptRelativeOffsets opts in to duration-offset expressions ("12h", "7d",
 // "2w", "3mo", "1y"). An offset denotes the period of the last N units (see
-// ParsePeriod); the instant Parse returns that period's start, i.e. now − offset.
+// ParsePeriod); the instant Parse returns that period's start, i.e. now - offset.
 func AcceptRelativeOffsets() ParserOption {
 	return func(p *Parser) { p.acceptRelativeOffsets = true }
 }
@@ -119,17 +119,15 @@ func WithCustomClock(c Clock) ParserOption {
 	return func(p *Parser) { p.clock = c }
 }
 
-// defaultParserOptions are applied always by default.
+// defaultParserOptions are what NewParser applies when given no options.
 //
-//nolint:gochecknoglobals // it's ok
+//nolint:gochecknoglobals // package-wide parser defaults
 var defaultParserOptions []ParserOption
 
-// DefaultLayouts are the common, unambiguous Go layouts the default parser
-// understands out of the box, so years.JustParse handles the ISO-8601 forms apps
-// see most often (RFC3339 timestamps and plain dates) without per-call setup.
-// Ordered most-specific first so the first successful match is the intended one.
-// RFC3339Nano is listed alone because its trailing-.9 form already matches
-// timestamps with or without a fractional second.
+// DefaultLayouts are the unambiguous Go layouts the default parser accepts, so
+// years.JustParse reads RFC3339 timestamps and plain dates with no setup. They
+// run most specific first because the first match wins. RFC3339Nano stands
+// alone: its trailing-.9 form matches with or without a fractional second.
 //
 //nolint:gochecknoglobals // exported, read-only set of layout constants
 var DefaultLayouts = []string{
@@ -148,7 +146,7 @@ func ResetParserDefaults() {
 	)
 }
 
-//nolint:gochecknoinits // we're fine for now
+//nolint:gochecknoinits // package-level Parse needs the defaults set before first use
 func init() { ResetParserDefaults() }
 
 func GetParserDefaults() []ParserOption      { return defaultParserOptions }
@@ -184,19 +182,19 @@ func NewParser(options ...ParserOption) *Parser {
 	return p
 }
 
-// DefaultParser makes a default parser
+// DefaultParser builds a fresh parser from the current package defaults, so
+// SetParserDefaults takes effect on the next call.
 //
-//nolint:gochecknoglobals // it's ok
+//nolint:gochecknoglobals // replaceable constructor
 var DefaultParser = func() *Parser {
 	return NewParser(defaultParserOptions...)
 }
 
-// ParseEpoch converts the given epoch timestamp int64 as a time.Time,
-// considering input as seconds/milliseconds/microseconds/nanoseconds.
-// Better use one specific configuration: seconds or milliseconds, etc.
-// In case if multiple configurations are enabled, there are edge-cases (both seconds/milli from 1970).
+// ParseEpoch reads v as a unix timestamp in every enabled unit and keeps the
+// readings that land in [1970, 3000). It returns the coarsest one (seconds,
+// then milli, micro, nano) and reports whether more than one unit fit; enable
+// a single unit when values near 1970 must not be ambiguous.
 func (p *Parser) ParseEpoch(v int64) (time.Time, bool, error) {
-	// sanity: at least one unit must be enabled
 	if !p.acceptUnixSeconds && !p.acceptUnixMilli && !p.acceptUnixMicro && !p.acceptUnixNano {
 		return time.Time{}, false, errors.New("no units enabled")
 	}
@@ -207,7 +205,7 @@ func (p *Parser) ParseEpoch(v int64) (time.Time, bool, error) {
 		secToNano  = 1_000_000_000
 	)
 
-	// plausible window [1970-01-01 … 3000-01-01).
+	// Plausible window: [1970-01-01, 3000-01-01).
 	timestampMin := time.Unix(0, 0)                             // 1970-01-01
 	timestampMax := time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC) // 3000-01-01
 
@@ -252,9 +250,11 @@ func (p *Parser) ParseEpoch(v int64) (time.Time, bool, error) {
 	}
 }
 
-// Parse parses time from given value using given layout (or using all parser's accepted layouts if layout is empty).
+// Parse parses value with layout, or with each of the parser's layouts when
+// layout is empty; a given layout is strict and its mismatch is an error. An
+// all-digit value is tried as an epoch first when a unix unit is accepted;
+// accepted aliases and relative offsets are tried after the layouts.
 func (p *Parser) Parse(layout, value string) (time.Time, error) {
-	// Shorthand: if possible, try to parse as a numeric timestamp:
 	digits, parseIntErr := strconv.ParseInt(value, 10, 64)
 	isNumericValue := parseIntErr == nil
 
@@ -265,14 +265,13 @@ func (p *Parser) Parse(layout, value string) (time.Time, error) {
 				return parsedEpoch, nil
 			}
 
-			// TODO: here we need to ensure if there is an only numeric prompt - then we have a chance
-			// if there is no - then fail. for now we just continue (assuming it will fail automatically later)
+			// TODO: fail here when no layout can match an all-digit value; the
+			// layouts below are left to reject it.
 		} else if len(p.layouts) == 0 {
 			return time.Time{}, errors.New("misconfiguration")
 		}
 	}
 
-	// Try to parse time using all accepted layouts
 	layouts := p.layouts
 	var strictLayout bool
 	if layout != "" {
@@ -290,7 +289,6 @@ func (p *Parser) Parse(layout, value string) (time.Time, error) {
 				return time.Time{}, fmt.Errorf("failed to parse time with layout(%s): %w", l, err)
 			}
 		case LayoutFormatUnixTimestamp:
-			// Extract timestamp part from the layout if any
 			start, end := findTimestampPart(l)
 			if start == 0 && end == 0 {
 				continue
@@ -302,7 +300,7 @@ func (p *Parser) Parse(layout, value string) (time.Time, error) {
 			afterTimestamp := layout[end:]
 			beforeTimestamp := layout[:start]
 
-			// store cleaned value (with only timestamp part)
+			// Strip the layout's literal prefix and suffix, leaving the digits.
 			cleanValue := value
 			cleanValue = strings.TrimPrefix(cleanValue, beforeTimestamp)
 			cleanValue = strings.TrimSuffix(cleanValue, afterTimestamp)

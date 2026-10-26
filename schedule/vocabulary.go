@@ -22,10 +22,9 @@ var (
 // DefaultDayPartition and the built-in weekday terms; apps may build their
 // own to add domain words or a custom partition.
 //
-// This is deliberately distinct from the alias system of the root package:
-// aliases resolve to absolute instants/periods ("last-week" → a concrete
-// Monday); a week pattern is a recurring predicate with no anchor in
-// absolute time.
+// It is separate from the root package's aliases, which resolve to absolute
+// instants or periods ("last-week" is a concrete week); a week pattern is a
+// recurring predicate with no anchor in absolute time.
 type Vocabulary struct {
 	Partition DayPartition
 	Extra     map[string]WeekPatterns // app-specific terms, e.g. "officehours"
@@ -87,8 +86,8 @@ func (v Vocabulary) ParsePatterns(s string) (WeekPatterns, error) {
 // terms builds the full term table: weekday names, built-in day-set words,
 // the partition's part names, and any Extra entries. Keys are canonical
 // (singular, lowercase); plural tolerance is handled at lookup time, not by
-// storing N entries. The table is data-driven on purpose — it is the seam
-// where localized vocabularies slot in later.
+// storing N entries. Keep it a data table: it is where a localized vocabulary
+// would plug in.
 func (v Vocabulary) terms() map[string]WeekPatterns {
 	table := make(map[string]WeekPatterns)
 
@@ -112,8 +111,8 @@ func (v Vocabulary) terms() map[string]WeekPatterns {
 	return table
 }
 
-// unknownTermError lists the known vocabulary — these strings surface in
-// HTTP 400s, so they must be actionable.
+// unknownTermError lists the known vocabulary: these errors reach end users
+// (HTTP 400s), so they must say what would have worked.
 func unknownTermError(term string, table map[string]WeekPatterns) error {
 	known := slices.Sorted(maps.Keys(table))
 	if strings.Contains(term, "-") {
