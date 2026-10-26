@@ -352,10 +352,17 @@ func (p *Parser) now() time.Time {
 }
 
 // parseGoLayout parses value with a Go layout, in the parser's location when
-// one is set and in UTC otherwise.
+// one is set and in UTC otherwise. A date-only value in the location starts at
+// the day's first instant.
 func (p *Parser) parseGoLayout(layout, value string) (time.Time, error) {
-	if p.location != nil {
-		return time.ParseInLocation(layout, value, p.location)
+	if p.location == nil {
+		return time.Parse(layout, value)
 	}
-	return time.Parse(layout, value)
+	t, err := time.ParseInLocation(layout, value, p.location)
+	if err == nil && layoutIsDateOnly(layout) && (t.Hour() != 0 || t.Minute() != 0) {
+		// The date's midnight falls in a DST gap and was moved into the day before.
+		y, m, d := t.Date()
+		t = startOfDay(y, m, d+1, t.Location())
+	}
+	return t, err
 }

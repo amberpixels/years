@@ -64,6 +64,9 @@ func TestWithLocation_Periods(t *testing.T) {
 
 	chisinau := mustLoadLocation(t, "Europe/Chisinau")
 	chicago := mustLoadLocation(t, "America/Chicago")
+	santiago := mustLoadLocation(t, "America/Santiago")
+	// Santiago enters summer time at midnight on 2026-09-06: that day starts at 01:00.
+	santiagoGapDay := time.Date(2026, time.September, 6, 1, 0, 0, 0, santiago)
 	in := func(loc *time.Location, m time.Month, d int) time.Time {
 		return time.Date(2026, m, d, 0, 0, 0, 0, loc)
 	}
@@ -120,6 +123,35 @@ func TestWithLocation_Periods(t *testing.T) {
 				End:   time.Date(2026, time.October, 28, 12, 0, 0, 0, chisinau),
 			},
 		},
+		{
+			"plain date whose midnight is skipped",
+			time.Date(2026, time.September, 10, 16, 0, 0, 0, time.UTC),
+			santiago,
+			"2026-09-06",
+			years.Period{Start: santiagoGapDay, End: in(santiago, time.September, 7)},
+		},
+		{
+			"plain date ending on a skipped midnight",
+			time.Date(2026, time.September, 10, 16, 0, 0, 0, time.UTC),
+			santiago,
+			"2026-09-05",
+			years.Period{Start: in(santiago, time.September, 5), End: santiagoGapDay},
+		},
+		// 03:30 UTC is 00:30 on Sep 7 in Santiago.
+		{
+			"yesterday is the day with a skipped midnight",
+			time.Date(2026, time.September, 7, 3, 30, 0, 0, time.UTC),
+			santiago,
+			"yesterday",
+			years.Period{Start: santiagoGapDay, End: in(santiago, time.September, 7)},
+		},
+		{
+			"week starting on a skipped midnight",
+			time.Date(2026, time.September, 10, 16, 0, 0, 0, time.UTC),
+			santiago,
+			"this-week",
+			years.Period{Start: santiagoGapDay, End: in(santiago, time.September, 13)},
+		},
 	}
 	for _, tc := range cases {
 		parser := periodTestParser(tc.now, years.WithLocation(tc.loc))
@@ -151,6 +183,20 @@ func TestWithLocation_UnsetKeepsSplitDefault(t *testing.T) {
 	today, err := parser.JustParse("today")
 	be.Require(t, err).To(be.Succeed())
 	be.Expect(t, today.String()).To(be.Eq(time.Date(2026, time.October, 20, 0, 0, 0, 0, chicago).String()))
+
+	offset, err := parser.JustParsePeriod("7d")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, offset.Start.String()).To(be.Eq(time.Date(2026, time.October, 13, 17, 30, 0, 0, chicago).String()))
+	be.Expect(t, offset.End.String()).To(be.Eq(time.Date(2026, time.October, 20, 17, 30, 0, 0, chicago).String()))
+
+	day, err := parser.JustParsePeriod("2026-10-20")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, day.Start.String()).To(be.Eq(time.Date(2026, time.October, 20, 0, 0, 0, 0, time.UTC).String()))
+	be.Expect(t, day.End.String()).To(be.Eq(time.Date(2026, time.October, 21, 0, 0, 0, 0, time.UTC).String()))
+
+	todayPeriod, err := parser.JustParsePeriod("today")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, todayPeriod.Start.String()).To(be.Eq(time.Date(2026, time.October, 20, 0, 0, 0, 0, chicago).String()))
 
 	nilLoc := periodTestParser(time.Date(2026, time.October, 20, 17, 30, 0, 0, chicago), years.WithLocation(nil))
 	date, err = nilLoc.JustParse("2026-10-20")

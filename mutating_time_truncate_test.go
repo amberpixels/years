@@ -91,3 +91,19 @@ func TestNow_UsesPackageClock(t *testing.T) {
 
 	be.Expect(t, years.Now()).To(be.Eq(fixed))
 }
+
+func TestMutatingTime_TruncateToDay_SkippedMidnight(t *testing.T) {
+	// Santiago enters summer time at midnight on 2026-09-06, so the day starts at 01:00.
+	santiago, err := time.LoadLocation("America/Santiago")
+	be.Require(t, err).To(be.Succeed())
+	want := time.Date(2026, time.September, 6, 1, 0, 0, 0, santiago)
+
+	t0 := time.Date(2026, time.September, 6, 15, 0, 0, 0, santiago)
+	years.Mutate(&t0).TruncateToDay()
+	be.Expect(t, t0.String()).To(be.Eq(want.String()))
+
+	// Thursday Sep 10; the Sunday-start week begins on the same skipped midnight.
+	t1 := time.Date(2026, time.September, 10, 15, 0, 0, 0, santiago)
+	years.Mutate(&t1).TruncateToWeek(time.Sunday)
+	be.Expect(t, t1.String()).To(be.Eq(want.String()))
+}
