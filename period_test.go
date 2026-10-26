@@ -138,6 +138,9 @@ func TestParsePeriod_LastWorkday(t *testing.T) {
 	}
 	berlin, err := time.LoadLocation("Europe/Berlin")
 	be.Require(t, err).To(be.Succeed())
+	// DST starts at 24:00 on Saturday 2026-09-05, so Sunday has no 00:00.
+	santiago, err := time.LoadLocation("America/Santiago")
+	be.Require(t, err).To(be.Succeed())
 
 	cases := []struct {
 		name string
@@ -172,6 +175,26 @@ func TestParsePeriod_LastWorkday(t *testing.T) {
 				time.Sunday, time.Monday, time.Tuesday, time.Wednesday, time.Thursday,
 			)},
 			want: years.Period{Start: day(22, time.UTC), End: day(23, time.UTC)},
+		},
+		{
+			name: "midnight DST start on the walk keeps whole days",
+			now:  time.Date(2026, time.September, 7, 10, 0, 0, 0, santiago),
+			want: years.Period{
+				Start: time.Date(2026, time.September, 4, 0, 0, 0, 0, santiago),
+				End:   time.Date(2026, time.September, 5, 0, 0, 0, 0, santiago),
+			},
+		},
+		{
+			name: "only out-of-range days keep the default set",
+			now:  time.Date(2026, time.October, 26, 9, 15, 0, 0, time.UTC),
+			opts: []years.ParserOption{years.WithWorkdays(time.Weekday(9))},
+			want: years.Period{Start: day(23, time.UTC), End: day(24, time.UTC)},
+		},
+		{
+			name: "out-of-range days are dropped from a mixed set",
+			now:  time.Date(2026, time.October, 26, 9, 15, 0, 0, time.UTC),
+			opts: []years.ParserOption{years.WithWorkdays(time.Monday, time.Weekday(-1))},
+			want: years.Period{Start: day(19, time.UTC), End: day(20, time.UTC)},
 		},
 		{
 			name: "no days keeps the default set",
@@ -225,4 +248,33 @@ func TestParsePeriod_WeekStartViaParserDefaults(t *testing.T) {
 	got, err := years.JustParsePeriod("this-week")
 	be.Require(t, err).To(be.Succeed())
 	be.Expect(t, got.Start.String()).To(be.Eq(`2026-10-26 00:00:00 +0000 UTC`))
+}
+
+func TestParsePeriod_WorkdaysViaParserDefaults(t *testing.T) {
+	t.Cleanup(func() {
+		years.ResetParserDefaults()
+		years.SetStdClock(&years.StdClock{})
+	})
+
+	// Sunday.
+	years.SetStdClock(&StaticClock{now: time.Date(2026, time.October, 25, 14, 0, 0, 0, time.UTC)})
+	years.ExtendParserDefaults(years.WithWorkdays(
+		time.Sunday, time.Monday, time.Tuesday, time.Wednesday, time.Thursday,
+	))
+
+	got, err := years.JustParsePeriod("last-workday")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, got.Start.String()).To(be.Eq(`2026-10-22 00:00:00 +0000 UTC`))
+	be.Expect(t, got.End.String()).To(be.Eq(`2026-10-23 00:00:00 +0000 UTC`))
+}
+
+func TestParsePeriod_WeekStartOutOfRange(t *testing.T) {
+	// Sunday: an out-of-range week start must keep the Sunday default.
+	now := time.Date(2026, time.October, 25, 14, 0, 0, 0, time.UTC)
+	parser := periodTestParser(now, years.WithWeekStart(time.Weekday(8)))
+
+	got, err := parser.JustParsePeriod("this-week")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, got.Start.String()).To(be.Eq(`2026-10-25 00:00:00 +0000 UTC`))
+	be.Expect(t, got.Contains(now)).To(be.True())
 }

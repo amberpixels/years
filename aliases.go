@@ -22,6 +22,13 @@ func defaultWorkdays() [daysInWeek]bool {
 	return set
 }
 
+// defaultCoreAliases is the built-in table for the default config, shared by
+// every parser that keeps it, so package-level calls do not rebuild it. It is
+// never written: a parser with custom aliases builds its own table.
+//
+//nolint:gochecknoglobals // read-only, built once
+var defaultCoreAliases = coreAliasesFor(time.Sunday, defaultWorkdays())
+
 // coreAliasesFor returns a fresh table of the built-in aliases for the given
 // week start and working days.
 // Aliases that are timezone-dependent by default use timezone of given base time
@@ -69,11 +76,14 @@ func coreAliasesFor(weekStart time.Weekday, workdays [daysInWeek]bool) map[strin
 			lastSunday := lastSaturday.AddDate(0, 0, -1)
 			return Mutate(&lastSunday).TruncateToDay().Time()
 		},
-		// the most recent working day strictly before base's day
+		// the most recent working day strictly before base's day. Each midnight is
+		// built from the calendar date: AddDate on a truncated time keeps drifting
+		// off 00:00 once the walk crosses a midnight DST change.
 		aliasLastWorkday: func(base time.Time) time.Time {
-			day := Mutate(&base).TruncateToDay().Time()
-			for range daysInWeek {
-				day = day.AddDate(0, 0, -1)
+			y, m, d := base.Date()
+			var day time.Time
+			for i := 1; i <= daysInWeek; i++ {
+				day = time.Date(y, m, d-i, 0, 0, 0, 0, base.Location())
 				if workdays[day.Weekday()] {
 					break
 				}

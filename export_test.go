@@ -2,6 +2,4 @@
 // to be used in `_test.go` files.
 package years
 
-import "time"
-
-var CoreAliases = coreAliasesFor(time.Sunday, defaultWorkdays())
+var CoreAliases = defaultCoreAliases

@@ -68,9 +68,14 @@ func WithCustomAliases(customAliases map[string]func(time.Time) time.Time) Parse
 }
 
 // WithWeekStart sets the weekday the week-based aliases ("this-week",
-// "last-week", "next-week") start on. Defaults to time.Sunday.
+// "last-week", "next-week") start on. Defaults to time.Sunday. A value outside
+// Sunday..Saturday leaves the week start unchanged.
 func WithWeekStart(d time.Weekday) ParserOption {
-	return func(p *Parser) { p.weekStart = d }
+	return func(p *Parser) {
+		if d >= time.Sunday && d <= time.Saturday {
+			p.weekStart = d
+		}
+	}
 }
 
 // WithWorkdays sets which weekdays are working days, used by the
@@ -153,8 +158,12 @@ func NewParser(options ...ParserOption) *Parser {
 
 	// Built after the options so week start and working days apply regardless
 	// of option order, and custom aliases still win over core ones.
-	p.aliases = coreAliasesFor(p.weekStart, p.workdays)
-	maps.Copy(p.aliases, p.customAliases)
+	if p.weekStart == time.Sunday && p.workdays == defaultWorkdays() && len(p.customAliases) == 0 {
+		p.aliases = defaultCoreAliases
+	} else {
+		p.aliases = coreAliasesFor(p.weekStart, p.workdays)
+		maps.Copy(p.aliases, p.customAliases)
+	}
 
 	return p
 }
