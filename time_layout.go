@@ -1,6 +1,7 @@
 package years
 
 import (
+	"errors"
 	"regexp"
 	"slices"
 	"strings"
@@ -238,4 +239,28 @@ func findTimestampPart(layout string) (int, int) {
 	}
 
 	return start, end
+}
+
+// layoutWildcard at the start or end of a Go layout matches any run of
+// characters, including none: "Mon Jan 02 2006 15:04:05 GMT-0700*".
+const layoutWildcard = "*"
+
+var errMisplacedWildcard = errors.New("* is allowed only at the start or end of a layout")
+
+// wildcardLayout is a Go layout with its edge wildcards split off.
+type wildcardLayout struct {
+	core              string
+	leading, trailing bool
+}
+
+// splitWildcards strips one layoutWildcard from each edge of layout. It
+// reports false when a wildcard is left in the core, or the core is empty.
+func splitWildcards(layout string) (wildcardLayout, bool) {
+	var w wildcardLayout
+	w.core, w.leading = strings.CutPrefix(layout, layoutWildcard)
+	w.core, w.trailing = strings.CutSuffix(w.core, layoutWildcard)
+	if w.core == "" || strings.Contains(w.core, layoutWildcard) {
+		return wildcardLayout{}, false
+	}
+	return w, true
 }

@@ -145,3 +145,74 @@ func TestParser_WithCustomAliases_OverridesAndOrder(t *testing.T) {
 	be.Require(t, err).To(be.Succeed())
 	be.Expect(t, thisWeek.String()).To(be.Eq(`2024-02-26 00:00:00 +0000 UTC`))
 }
+
+func TestParser_Wildcards(t *testing.T) {
+	jsDate := time.Date(2025, time.April, 24, 11, 52, 5, 0, time.FixedZone("", 3*60*60))
+	april24 := time.Date(2025, time.April, 24, 0, 0, 0, 0, time.UTC)
+
+	cases := []struct {
+		layout string
+		value  string
+		want   time.Time
+	}{
+		{
+			"Mon Jan 02 2006 15:04:05 GMT-0700*",
+			"Thu Apr 24 2025 11:52:05 GMT+0300 (Eastern European Summer Time)",
+			jsDate,
+		},
+		{"2006-01-02*", "2025-04-24 (Thursday)", april24},
+		{"2006-01-02*", "2025-04-24", april24},
+		{"*2006-01-02", "created: 2025-04-24", april24},
+		{"*2006-01-02*", "[2025-04-24]", april24},
+		{"*2006-01-02*", "2025-04-24", april24},
+		// The longest prefix keeps the whole day, not "2025-4-2".
+		{"2006-1-2*", "2025-4-24 x", april24},
+		// The shortest skip keeps the whole month, not "1/2/2025".
+		{"*1/2/2006", "x 11/2/2025", time.Date(2025, time.November, 2, 0, 0, 0, 0, time.UTC)},
+		{"*2006-1-2*", "[2025-4-24]", april24},
+		{"*2006-01-02*", "дата: 2025-04-24 (четверг)", april24},
+	}
+	parser := years.NewParser()
+	for _, tc := range cases {
+		got, err := parser.Parse(tc.layout, tc.value)
+		be.Require(t, err).To(be.Succeed(), "%q with %q", tc.value, tc.layout)
+		be.Expect(t, got.Equal(tc.want)).To(be.Eq(true), "%q with %q: got %s", tc.value, tc.layout, got)
+		_, gotOffset := got.Zone()
+		_, wantOffset := tc.want.Zone()
+		be.Expect(t, gotOffset).To(be.Eq(wantOffset), "%q with %q", tc.value, tc.layout)
+	}
+}
+
+func TestParser_WildcardErrors(t *testing.T) {
+	cases := []struct {
+		layout string
+		value  string
+	}{
+		{"2006*01-02", "2025*04-24"},
+		{"**2006-01-02", "2025-04-24"},
+		{"2006-01-02**", "2025-04-24"},
+		{"*", "2025-04-24"},
+		{"2006-01-02*", "no date here"},
+		{"*2006-01-02*", "no date here"},
+	}
+	parser := years.NewParser()
+	for _, tc := range cases {
+		_, err := parser.Parse(tc.layout, tc.value)
+		be.Expect(t, err).To(be.HaveOccurred(), "%q with %q", tc.value, tc.layout)
+	}
+
+	_, err := parser.Parse("2006*01-02", "2025*04-24")
+	be.Expect(t, err.Error()).To(be.ContainSubstring("layout(2006*01-02)"))
+}
+
+func TestParser_WildcardAfterStrictLayouts(t *testing.T) {
+	parser := years.NewParser(years.WithLayouts(time.RFC3339, "2006-01-02*"))
+
+	got, err := parser.JustParse("2025-04-24T10:00:00Z")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, got).To(be.Eq(time.Date(2025, time.April, 24, 10, 0, 0, 0, time.UTC)))
+
+	got, err = parser.JustParse("2025-04-24 (Thursday)")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, got).To(be.Eq(time.Date(2025, time.April, 24, 0, 0, 0, 0, time.UTC)))
+}

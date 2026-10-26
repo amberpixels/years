@@ -87,6 +87,16 @@ t, _ = p.Parse("logs-U@000.log", "logs-1717852417000.log") // 2024-06-08 13:13:3
 t, _ = p.JustParse("2020-01")
 ```
 
+A Go layout may start and/or end with `*`, which matches any run of characters, including none. It reads dates wrapped in text no layout can describe, such as JavaScript's `Date.toString()`:
+
+```go
+t, _ = years.Parse("Mon Jan 02 2006 15:04:05 GMT-0700*",
+	"Thu Apr 24 2025 11:52:05 GMT+0300 (Eastern European Summer Time)") // 2025-04-24 11:52:05 +0300
+t, _ = years.Parse("*2006-01-02*", "[2025-04-24]")
+```
+
+`*` is allowed only as the first or last character; anywhere else the layout is an error. A trailing `*` keeps the longest prefix that parses and a leading `*` the shortest skip, so `2006-1-2*` reads `2025-4-24 x` as April 24, not April 2. With both, the longest substring that parses wins, leftmost first. Wildcard layouts are lenient, so in a `WithLayouts` list put them after the strict ones.
+
 For the global parser, `SetParserDefaults` replaces its options, `ExtendParserDefaults` appends, and `ResetParserDefaults` restores the built-in behavior:
 
 ```go
