@@ -16,7 +16,7 @@ A time toolkit for Go: parsing, formatting, humanizing, and navigating time-base
 
 ---
 
-`years` bundles the time helpers you keep rewriting: one parser that accepts Go layouts, unix timestamps, and human aliases; zero-safe formatting with canonical layouts; "3h ago" humanization; fluent in-place mutation; and a Voyager for traversing anything that has a time - like calendar-structured file trees.
+`years` bundles the time helpers you keep rewriting. One parser accepts Go layouts, unix timestamps, and human aliases. Around it: zero-safe formatting with canonical layouts, "3h ago" humanization, fluent in-place mutation, and a Voyager that traverses anything with a time, such as calendar-structured file trees.
 
 ```go
 t, _ := years.JustParse("2024-05-26") // ISO dates & RFC3339 out of the box
@@ -59,7 +59,7 @@ func main() {
 
 ## Parsing
 
-The default parser understands RFC3339 timestamps, `2006-01-02 15:04[:05]`, plain dates, unix-second timestamps, and aliases - no setup:
+With no setup, the default parser reads RFC3339 timestamps, `2006-01-02 15:04[:05]`, plain dates, unix-second timestamps, and aliases:
 
 ```go
 t, _ := years.JustParse("2024-05-26T13:45:00Z")
@@ -72,7 +72,7 @@ t, _ = years.Parse("2006-01-02", "2024-05-26")
 
 Aliases resolve against the package clock: `today`, `yesterday`, `tomorrow`, `last-workday`, `this-week`, `last-week`, `next-week`, `last-weekend`, `next-weekend`, `this-month`, `last-month`, `next-month`, `this-year`, `last-year`, `next-year`.
 
-`last-workday` is the most recent working day before today: on a Monday, that is Friday. Weeks start on Sunday and working days are Monday to Friday unless a parser says otherwise with `WithWeekStart` and `WithWorkdays`.
+`last-workday` is the most recent working day before today: on a Monday, that is Friday. Weeks start on Sunday and working days are Monday to Friday; `WithWeekStart` and `WithWorkdays` change them.
 
 Layouts may also contain a timestamp part: `U@` for unix seconds, `U@000` for milliseconds, `U@000000` / `U@000000000` for micro/nanoseconds:
 
@@ -87,7 +87,7 @@ t, _ = p.Parse("logs-U@000.log", "logs-1717852417000.log") // 2024-06-08 13:13:3
 t, _ = p.JustParse("2020-01")
 ```
 
-The global parser is configurable too - `SetParserDefaults` replaces its options, `ExtendParserDefaults` appends, `ResetParserDefaults` restores the out-of-the-box behavior:
+For the global parser, `SetParserDefaults` replaces its options, `ExtendParserDefaults` appends, and `ResetParserDefaults` restores the built-in behavior:
 
 ```go
 years.ExtendParserDefaults(years.WithLayouts("2006, Jan 2"))
@@ -101,18 +101,18 @@ years.ExtendParserDefaults(
 period, _ := years.JustParsePeriod("last-workday")
 ```
 
-By default, a layout value with no offset is read in UTC (`2026-10-20` is UTC midnight), while aliases and relative offsets resolve in the clock's zone, which is local time for the standard clock. `WithLocation` puts both in one zone: offset-less values are read in it, day and week boundaries are cut in it, and values with an explicit offset (`Z`, `+02:00`) keep their own:
+By default, a layout value with no offset is read in UTC (`2026-10-20` is UTC midnight). Aliases and relative offsets resolve in the clock's zone, which is local time for the standard clock. `WithLocation` puts both in one zone: offset-less values are read in it and day and week boundaries are cut in it. Values with an explicit offset (`Z`, `+02:00`) keep their own:
 
 ```go
 years.ExtendParserDefaults(years.WithLocation(time.Local))
 t, _ = years.JustParse("2026-10-20") // local midnight
 ```
 
-Options passed to `NewParser` replace the defaults rather than add to them, so a custom parser that should resolve aliases lists `AcceptAliases()` alongside `WithWeekStart` or `WithWorkdays`.
+Options passed to `NewParser` replace the defaults instead of adding to them. A custom parser that should resolve aliases lists `AcceptAliases()` alongside `WithWeekStart` or `WithWorkdays`.
 
 ## Formatting
 
-Canonical display layouts (so you stop re-typing the reference-time magic strings), plus zero/nil-safe helpers:
+Named display layouts, so you stop re-typing reference-time strings, plus zero- and nil-safe helpers:
 
 ```go
 t := time.Date(2025, time.April, 30, 13, 45, 0, 0, time.UTC)
@@ -163,7 +163,7 @@ years.Mutate(&t).TruncateToWeek(time.Monday) // t is now 2025-04-28 00:00:00
 years.Mutate(&t).SetMonth(time.December).SetDay(24).SetHour(18)
 ```
 
-Truncation goes down to any unit (`TruncateToSecond` ... `TruncateToYear`), setters cover `SetYear` ... `SetNanosecond`.
+Truncation covers every unit from `TruncateToSecond` to `TruncateToYear`; setters run from `SetYear` to `SetNanosecond`.
 
 ## Voyager: Navigating Time-Based Data
 
@@ -178,7 +178,7 @@ _ = v.Traverse(func(w years.Waypoint) {
 }, years.O_PAST()) // newest first
 ```
 
-Non-default layouts are given to the waypoints: `years.WaypointGroupFromStrings(dates, "2006, Jan 2")`.
+Pass a non-default layout to the waypoints: `years.WaypointGroupFromStrings(dates, "2006, Jan 2")`.
 
 Files and directories named after dates form navigable calendars. Given a tree like `calendar/2024/Jan/2024-01-15.txt`:
 
@@ -223,7 +223,7 @@ work.NextMatchingDay(t)  // next scheduled day
 
 ### Week patterns
 
-`WeekPattern` is a *recurring* wall-clock predicate - "weekends", "nights" - with no anchor in absolute time (unlike aliases: `last-week` resolves to one concrete week). `ParsePatterns` turns a human vocabulary into patterns; comma means union:
+`WeekPattern` is a *recurring* wall-clock predicate such as "weekends" or "nights", with no anchor in absolute time (unlike aliases: `last-week` resolves to one concrete week). `ParsePatterns` turns a human vocabulary into patterns; comma means union:
 
 ```go
 patterns, _ := schedule.ParsePatterns("weekends,mornings")
@@ -247,7 +247,7 @@ The partition covers the full day exactly once (enforced by `Validate`), so `Par
 schedule.DefaultDayPartition.PartOf(t).Name // "morning" | "lunchtime" | ...
 ```
 
-A cross-midnight span belongs to the day it starts on - Sunday night includes Monday 01:00, the way humans mean it. Patterns read the wall clock of the given time as-is (no timezone field; callers own locality). Domain words and custom partitions plug in via `Vocabulary`:
+A cross-midnight span belongs to the day it starts on, so Sunday night includes Monday 01:00. Patterns read the given time's wall clock as-is; there is no timezone field, so convert times to the zone you mean first. Add domain words and custom partitions with `Vocabulary`:
 
 ```go
 vocab := schedule.DefaultVocabulary()

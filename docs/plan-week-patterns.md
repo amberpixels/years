@@ -7,24 +7,22 @@ Status: **shipped** in **v0.3.0**.
 Consumers (runwell today, any r3-backed app tomorrow) want to filter and group
 records by *recurring wall-clock patterns*: "only sundays", "weekends",
 "workingdays", "mornings", "nights". The `schedule` package already models the
-underlying semantics — `Days []time.Weekday`, time-of-day windows (`TimeOfDay`,
-`DaySlot` with cross-midnight `Hour >= 24`), and `Contains(time.Time)`
-predicates — but there is **no string vocabulary** and no normalized value type
-a query layer (r3) can introspect and compile to database filters.
+semantics: `Days []time.Weekday`, time-of-day windows (`TimeOfDay`, `DaySlot`
+with cross-midnight `Hour >= 24`), and `Contains(time.Time)` predicates. It has
+**no string vocabulary**, and no normalized value type a query layer (r3) can
+introspect and compile to database filters.
 
-This is deliberately different from the existing alias system (`aliases.go`):
-aliases resolve to **absolute** instants/periods ("last-week" → a concrete
-Monday); a week pattern is a **recurring** predicate with no anchor in absolute
-time. The two must not be conflated.
+This is separate from the alias system (`aliases.go`). Aliases resolve to
+**absolute** instants or periods ("last-week" is a concrete week); a week
+pattern is a **recurring** predicate with no anchor in absolute time. Do not
+conflate the two.
 
 ## Goals
 
-- A small, declarative, introspectable value type for recurring weekly
-  wall-clock patterns.
+- A small, introspectable value type for recurring weekly wall-clock patterns.
 - A canonical **day partition**: named, non-overlapping time-of-day parts
-  covering the full 24h — one source of truth for both filtering
-  (`?when=mornings`) and classification/grouping (`PartOf(t)` for "runs by part
-  of day" charts).
+  covering the full 24h. One table serves both filtering (`?when=mornings`) and
+  grouping (`PartOf(t)` for "runs by part of day" charts).
 - A parser turning a human vocabulary (`"weekends"`, `"mornings"`,
   `"saturdays,sundays"`) into patterns, with an extension seam for
   app-specific vocabularies.
@@ -34,11 +32,10 @@ time. The two must not be conflated.
 
 ## Non-goals (v0.3.0)
 
-- Combined day×part grammar (`sunday-mornings`) — the grammar and semantics are
-  specified below so nothing painted us into a corner, but parsing support is a
-  follow-up.
-- Localized vocabularies (existing TODO in `aliases.go` applies here too;
-  keep the term tables data-driven so translation slots in later).
+- Combined day-and-part grammar (`sunday-mornings`). Its grammar and semantics
+  are specified below so the design leaves room for it; parsing is a follow-up.
+- Localized vocabularies (the TODO in `aliases.go` applies here too). Keep the
+  term tables data-driven so translations can be added.
 - Any r3 awareness. `years` stays dependency-free; r3 imports us, never the
   reverse.
 
@@ -46,7 +43,7 @@ time. The two must not be conflated.
 
 All new code lives in the existing `schedule` subpackage.
 
-### WeekPattern — the value type
+### WeekPattern: the value type
 
 ```go
 // WeekPattern is a recurring weekly wall-clock pattern: a conjunction of
@@ -71,24 +68,23 @@ func (p WeekPattern) Validate() error   // sane hours/minutes, End > Start, End 
 **`Contains` semantics (attribution rule).** `p.Contains(t)` is true iff there
 exists a day `d` (the calendar date of `t` or the previous date) such that
 `weekday(d) ∈ Days` (or `Days` is empty) and `t ∈ [d+span.Start, d+span.End)`
-for some span. Since spans are capped below 48h, checking `t`'s own date and
-the previous date is sufficient. Consequences:
+for some span. Spans are capped below 48h, so checking `t`'s own date and the
+previous date is enough. Consequences:
 
-- Plain windows (`nights` over all days) behave as pure minute-of-day
-  wraparound: 00:30 and 23:10 both match.
-- The future combined `sunday-nights` **includes Monday 01:00** — the night is
-  attributed to the day it starts on, matching how humans use the phrase.
-  Fixing this rule now means the r3 compiler and any grouping code can rely on
-  it and never diverge later.
+- Plain windows (`nights` over all days) wrap by minute of day: 00:30 and
+  23:10 both match.
+- The future combined `sunday-nights` **includes Monday 01:00**: a night
+  belongs to the day it starts on, as people use the phrase. The r3 compiler
+  and any grouping code rely on this rule, so it must not change.
 
 `Contains` reads `t`'s wall clock via `t.Weekday()`/`t.Hour()`/`t.Minute()` in
-`t`'s own location — no `*time.Location` field, unlike `Schedule`. That is the
-whole timezone story by design.
+`t`'s own location. Unlike `Schedule`, there is no `*time.Location` field, and
+no other timezone handling.
 
-Interop nicety (cheap, include): `func (p WeekPattern) MultiSlotSchedule(loc *time.Location) MultiSlotSchedule`
+Also include `func (p WeekPattern) MultiSlotSchedule(loc *time.Location) MultiSlotSchedule`
 so existing slot math (`SlotsForDay`, `AvailableMinutes`) works on patterns.
 
-### DayPartition — named parts of the day
+### DayPartition: named parts of the day
 
 ```go
 // DayPart is one named slice of the day within a DayPartition.
@@ -109,18 +105,17 @@ Default partition (exported var, replaceable; `Validate`d in tests):
 
 | part      | span                         |
 |-----------|------------------------------|
-| night     | 22:00–05:00 (wraps midnight) |
-| morning   | 05:00–12:00                  |
-| lunchtime | 12:00–14:00                  |
-| afternoon | 14:00–17:00                  |
-| evening   | 17:00–22:00                  |
+| night     | 22:00-05:00 (wraps midnight) |
+| morning   | 05:00-12:00                  |
+| lunchtime | 12:00-14:00                  |
+| afternoon | 14:00-17:00                  |
+| evening   | 17:00-22:00                  |
 
-`PartOf` is total (the invariant guarantees every minute belongs to exactly one
-part) — that's what makes it a safe group-by key for charts. A custom partition
-that violates the invariant fails `Validate` loudly instead of silently
-misclassifying.
+`PartOf` is total, since the invariant puts every minute in exactly one part,
+which makes it a safe group-by key for charts. A custom partition that breaks
+the invariant fails `Validate` instead of misclassifying.
 
-### Vocabulary — string → patterns
+### Vocabulary: string to patterns
 
 ```go
 // Vocabulary resolves human terms to week patterns. The zero-config default
@@ -150,33 +145,32 @@ dayset := "monday(s)" … "sunday(s)"
 daypart:= partition name, singular or plural    -> {Days: nil, Spans: [part.Span]}
 ```
 
-- Case-insensitive, whitespace-trimmed; both singular and plural accepted,
-  canonical form is stored (plural-tolerance is a lookup detail, not N map
-  entries).
-- Unknown term → error that **lists the known vocabulary** (these strings
-  surface in HTTP 400s; make them helpful).
-- Terms are table-driven (one map built from weekday names + partition +
-  `Extra`), no switch statements — this is the translation seam the existing
-  `aliases.go` TODO asks for.
-- Reserved for the future: `-` as the dayset×daypart combinator
-  (`sunday-mornings` → `{Days: [Sun], Spans: [morning]}`). No current term
-  contains a hyphen, so the grammar extends without breakage. Until
-  implemented, a hyphenated compound errors as unknown (with a "not yet
-  supported" hint).
+- Case-insensitive and whitespace-trimmed. Singular and plural are both
+  accepted; only the canonical form is stored, and plurals are handled at
+  lookup, not as extra map entries.
+- An unknown term errors with **the known vocabulary listed**. These strings
+  surface in HTTP 400s, so make them helpful.
+- Terms are table-driven, one map built from weekday names, the partition and
+  `Extra`, with no switch statements. This is where translation plugs in, as
+  the `aliases.go` TODO asks.
+- Reserved for the future: `-` as the dayset-and-daypart combinator
+  (`sunday-mornings` gives `{Days: [Sun], Spans: [morning]}`). No current term
+  contains a hyphen, so adding it breaks nothing. Until then, a hyphenated
+  compound errors as unknown, with a "not yet supported" hint.
 
-Union across mixed term kinds is why `ParsePatterns` returns `WeekPatterns`
-(list = OR) rather than merging into one struct: `"sundays,mornings"` is
-*sundays-all-day OR mornings-every-day*, which a single `{Days, Spans}`
-conjunction cannot express. Group = AND, list = OR — same shape r3 composes
-with `And`/`Or`, so compilation is mechanical.
+`ParsePatterns` returns `WeekPatterns` (list = OR) instead of merging into one
+struct, because mixed terms need a union: `"sundays,mornings"` is
+*sundays-all-day OR mornings-every-day*, which one `{Days, Spans}` conjunction
+cannot express. Group = AND and list = OR is the shape r3 composes with
+`And`/`Or`, so compiling to it is mechanical.
 
 ## Bug fix rider
 
-`WithCustomAliases` (`parser.go:50`) copies in the wrong direction —
-`maps.Copy(customAliases, p.aliases)` mutates the caller's map and never
-installs anything on the parser. Fix to merge into `p.aliases` (clone first;
-the shared `coreAliases` map must never be mutated) + regression test. Ship in
-the same release since consumers may reach for custom aliases alongside the
+`WithCustomAliases` (`parser.go:50`) copies in the wrong direction:
+`maps.Copy(customAliases, p.aliases)` mutates the caller's map and installs
+nothing on the parser. Fix it to merge into `p.aliases`, cloning first since
+the shared `coreAliases` map must never be mutated, and add a regression test.
+Ship it in the same release, as consumers may use custom aliases alongside the
 new vocabulary.
 
 ## File plan
