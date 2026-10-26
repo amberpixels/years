@@ -101,6 +101,13 @@ years.ExtendParserDefaults(
 period, _ := years.JustParsePeriod("last-workday")
 ```
 
+By default, a layout value with no offset is read in UTC (`2026-10-20` is UTC midnight), while aliases and relative offsets resolve in the clock's zone, which is local time for the standard clock. `WithLocation` puts both in one zone: offset-less values are read in it, day and week boundaries are cut in it, and values with an explicit offset (`Z`, `+02:00`) keep their own:
+
+```go
+years.ExtendParserDefaults(years.WithLocation(time.Local))
+t, _ = years.JustParse("2026-10-20") // local midnight
+```
+
 Options passed to `NewParser` replace the defaults rather than add to them, so a custom parser that should resolve aliases lists `AcceptAliases()` alongside `WithWeekStart` or `WithWorkdays`.
 
 ## Formatting

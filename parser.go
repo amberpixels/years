@@ -24,6 +24,10 @@ type Parser struct {
 	clock   Clock
 	layouts []string
 
+	// location is where offset-less layouts are read and aliases resolve; nil
+	// keeps layouts in UTC and aliases in the clock's zone.
+	location *time.Location
+
 	weekStart time.Weekday
 	workdays  [daysInWeek]bool
 
@@ -94,6 +98,18 @@ func WithWorkdays(days ...time.Weekday) ParserOption {
 		}
 		if found {
 			p.workdays = set
+		}
+	}
+}
+
+// WithLocation reads layouts that carry no offset in loc, as
+// time.ParseInLocation does, and resolves aliases and relative offsets on
+// loc's calendar. Values with an explicit offset keep it. A nil loc leaves the
+// setting unchanged.
+func WithLocation(loc *time.Location) ParserOption {
+	return func(p *Parser) {
+		if loc != nil {
+			p.location = loc
 		}
 	}
 }
@@ -268,7 +284,7 @@ func (p *Parser) Parse(layout, value string) (time.Time, error) {
 
 		switch layoutDetails.Format {
 		case LayoutFormatGo:
-			if t, err := time.Parse(l, value); err == nil {
+			if t, err := p.parseGoLayout(l, value); err == nil {
 				return t, nil
 			} else if strictLayout {
 				return time.Time{}, fmt.Errorf("failed to parse time with layout(%s): %w", l, err)
@@ -308,13 +324,13 @@ func (p *Parser) Parse(layout, value string) (time.Time, error) {
 	if p.acceptAliases {
 		for alias, aliasCb := range p.aliases {
 			if value == alias {
-				return aliasCb(p.clock.Now()), nil
+				return aliasCb(p.now()), nil
 			}
 		}
 	}
 
 	if p.acceptRelativeOffsets {
-		if period, ok := parseRelativeOffset(value, p.clock.Now()); ok {
+		if period, ok := parseRelativeOffset(value, p.now()); ok {
 			return period.Start, nil
 		}
 	}
@@ -325,4 +341,28 @@ func (p *Parser) Parse(layout, value string) (time.Time, error) {
 // JustParse is a shortcut for Parse("", value) (so using all parser's accepted layouts).
 func (p *Parser) JustParse(value string) (time.Time, error) {
 	return p.Parse("", value)
+}
+
+// now is the clock's time, moved into the parser's location when one is set.
+func (p *Parser) now() time.Time {
+	if p.location != nil {
+		return p.clock.Now().In(p.location)
+	}
+	return p.clock.Now()
+}
+
+// parseGoLayout parses value with a Go layout, in the parser's location when
+// one is set and in UTC otherwise. A date-only value in the location starts at
+// the day's first instant.
+func (p *Parser) parseGoLayout(layout, value string) (time.Time, error) {
+	if p.location == nil {
+		return time.Parse(layout, value)
+	}
+	t, err := time.ParseInLocation(layout, value, p.location)
+	if err == nil && layoutIsDateOnly(layout) && (t.Hour() != 0 || t.Minute() != 0) {
+		// The date's midnight falls in a DST gap and was moved into the day before.
+		y, m, d := t.Date()
+		t = startOfDay(y, m, d+1, t.Location())
+	}
+	return t, err
 }

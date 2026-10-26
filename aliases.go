@@ -41,49 +41,35 @@ func coreAliasesFor(weekStart time.Weekday, workdays [daysInWeek]bool) map[strin
 			return Mutate(&base).TruncateToDay().Time()
 		},
 		"yesterday": func(base time.Time) time.Time {
-			base = base.AddDate(0, 0, -1)
-			return Mutate(&base).TruncateToDay().Time()
+			return dayStartFrom(base, -1)
 		},
 		"tomorrow": func(base time.Time) time.Time {
-			base = base.AddDate(0, 0, 1)
-			return Mutate(&base).TruncateToDay().Time()
+			return dayStartFrom(base, 1)
 		},
 		"this-week": func(base time.Time) time.Time {
 			return Mutate(&base).TruncateToWeek(weekStart).Time()
 		},
 		"last-week": func(base time.Time) time.Time {
-			base = base.AddDate(0, 0, -daysInWeek)
-			return Mutate(&base).TruncateToWeek(weekStart).Time()
+			day := dayStartFrom(base, -daysInWeek)
+			return Mutate(&day).TruncateToWeek(weekStart).Time()
 		},
 		"next-week": func(base time.Time) time.Time {
-			base = base.AddDate(0, 0, daysInWeek)
-			return Mutate(&base).TruncateToWeek(weekStart).Time()
+			day := dayStartFrom(base, daysInWeek)
+			return Mutate(&day).TruncateToWeek(weekStart).Time()
 		},
 		// to avoid misunderstanding we deliberately do not have `this-weekend` alias
 		// as it can be considered as both "following weekend" or "previous weekend"
 		aliasNextWeekend: func(base time.Time) time.Time {
-			followingSaturday := base
-			for followingSaturday.Weekday() != time.Saturday {
-				followingSaturday = followingSaturday.AddDate(0, 0, 1)
-			}
-			return Mutate(&followingSaturday).TruncateToDay().Time()
+			return dayStartFrom(base, daysUntilSaturday(base))
 		},
 		aliasLastWeekend: func(base time.Time) time.Time {
-			lastSaturday := base
-			for lastSaturday.Weekday() != time.Saturday {
-				lastSaturday = lastSaturday.AddDate(0, 0, -1)
-			}
-			lastSunday := lastSaturday.AddDate(0, 0, -1)
-			return Mutate(&lastSunday).TruncateToDay().Time()
+			return dayStartFrom(base, -daysSinceSaturday(base)-1)
 		},
-		// the most recent working day strictly before base's day. Each midnight is
-		// built from the calendar date: AddDate on a truncated time keeps drifting
-		// off 00:00 once the walk crosses a midnight DST change.
+		// the most recent working day strictly before base's day.
 		aliasLastWorkday: func(base time.Time) time.Time {
-			y, m, d := base.Date()
 			var day time.Time
 			for i := 1; i <= daysInWeek; i++ {
-				day = time.Date(y, m, d-i, 0, 0, 0, 0, base.Location())
+				day = dayStartFrom(base, -i)
 				if workdays[day.Weekday()] {
 					break
 				}
@@ -93,26 +79,40 @@ func coreAliasesFor(weekStart time.Weekday, workdays [daysInWeek]bool) map[strin
 		"this-month": func(base time.Time) time.Time {
 			return Mutate(&base).TruncateToMonth().Time()
 		},
+		// Built from the 1st so the month step is overflow-safe
+		// (Mar 31 minus a month would otherwise spill into Feb).
 		"last-month": func(base time.Time) time.Time {
-			// Operate on the 1st so the month step is overflow-safe
-			// (AddDate on e.g. Mar 31 would otherwise spill into Feb).
-			startOfMonth := Mutate(&base).TruncateToMonth().Time()
-			return startOfMonth.AddDate(0, -1, 0)
+			return startOfDay(base.Year(), base.Month()-1, 1, base.Location())
 		},
 		"next-month": func(base time.Time) time.Time {
-			startOfMonth := Mutate(&base).TruncateToMonth().Time()
-			return startOfMonth.AddDate(0, 1, 0)
+			return startOfDay(base.Year(), base.Month()+1, 1, base.Location())
 		},
 		"this-year": func(base time.Time) time.Time {
 			return Mutate(&base).TruncateToYear().Time()
 		},
 		"last-year": func(base time.Time) time.Time {
-			startOfYear := Mutate(&base).TruncateToYear().Time()
-			return startOfYear.AddDate(-1, 0, 0)
+			return startOfDay(base.Year()-1, 1, 1, base.Location())
 		},
 		"next-year": func(base time.Time) time.Time {
-			startOfYear := Mutate(&base).TruncateToYear().Time()
-			return startOfYear.AddDate(1, 0, 0)
+			return startOfDay(base.Year()+1, 1, 1, base.Location())
 		},
 	}
+}
+
+// dayStartFrom returns the start of the day n calendar days from base's day.
+// It steps by date, not by AddDate on a wall clock, so a day whose midnight
+// falls in a DST gap is never skipped or shifted.
+func dayStartFrom(base time.Time, n int) time.Time {
+	y, m, d := base.Date()
+	return startOfDay(y, m, d+n, base.Location())
+}
+
+// daysUntilSaturday counts the days from t's weekday forward to Saturday.
+func daysUntilSaturday(t time.Time) int {
+	return (int(time.Saturday) - int(t.Weekday()) + daysInWeek) % daysInWeek
+}
+
+// daysSinceSaturday counts the days from Saturday forward to t's weekday.
+func daysSinceSaturday(t time.Time) int {
+	return (int(t.Weekday()) - int(time.Saturday) + daysInWeek) % daysInWeek
 }

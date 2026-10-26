@@ -64,10 +64,17 @@ var aliasPeriodSpans = map[string]func(start time.Time) time.Time{
 	"next-year": nextYear,
 }
 
-func nextDay(t time.Time) time.Time   { return t.AddDate(0, 0, 1) }
-func nextWeek(t time.Time) time.Time  { return t.AddDate(0, 0, daysInWeek) }
-func nextMonth(t time.Time) time.Time { return t.AddDate(0, 1, 0) }
-func nextYear(t time.Time) time.Time  { return t.AddDate(1, 0, 0) }
+// The spans step by calendar date from a period start, so an end on a day
+// whose midnight falls in a DST gap is that day's first instant.
+func nextDay(t time.Time) time.Time  { return dayStartFrom(t, 1) }
+func nextWeek(t time.Time) time.Time { return dayStartFrom(t, daysInWeek) }
+func nextMonth(t time.Time) time.Time {
+	return startOfDay(t.Year(), t.Month()+1, t.Day(), t.Location())
+}
+
+func nextYear(t time.Time) time.Time {
+	return startOfDay(t.Year()+1, t.Month(), t.Day(), t.Location())
+}
 
 const daysInWeekend = 2
 
@@ -85,16 +92,12 @@ func (p *Parser) periodForAlias(alias string, base time.Time) (Period, bool) {
 
 	switch alias {
 	case aliasNextWeekend, aliasLastWeekend:
-		step := 1
+		offset := daysUntilSaturday(base)
 		if alias == aliasLastWeekend {
-			step = -1
+			offset = -daysSinceSaturday(base)
 		}
-		sat := base
-		for sat.Weekday() != time.Saturday {
-			sat = sat.AddDate(0, 0, step)
-		}
-		start := Mutate(&sat).TruncateToDay().Time()
-		return Period{Start: start, End: start.AddDate(0, 0, daysInWeekend)}, true
+		start := dayStartFrom(base, offset)
+		return Period{Start: start, End: dayStartFrom(start, daysInWeekend)}, true
 	}
 
 	start := cb(base)
@@ -153,12 +156,12 @@ func layoutIsDateOnly(layout string) bool {
 //     instant period.
 func (p *Parser) ParsePeriod(layout, value string) (Period, error) {
 	if p.acceptAliases {
-		if period, ok := p.periodForAlias(value, p.clock.Now()); ok {
+		if period, ok := p.periodForAlias(value, p.now()); ok {
 			return period, nil
 		}
 	}
 	if p.acceptRelativeOffsets {
-		if period, ok := parseRelativeOffset(value, p.clock.Now()); ok {
+		if period, ok := parseRelativeOffset(value, p.now()); ok {
 			return period, nil
 		}
 	}
@@ -171,12 +174,12 @@ func (p *Parser) ParsePeriod(layout, value string) (Period, error) {
 		if ParseLayout(l).Format != LayoutFormatGo {
 			continue
 		}
-		t, err := time.Parse(l, value)
+		t, err := p.parseGoLayout(l, value)
 		if err != nil {
 			continue
 		}
 		if layoutIsDateOnly(l) {
-			return Period{Start: t, End: t.AddDate(0, 0, 1)}, nil
+			return Period{Start: t, End: nextDay(t)}, nil
 		}
 		return InstantPeriod(t), nil
 	}
