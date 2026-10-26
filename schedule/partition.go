@@ -13,14 +13,13 @@ type DayPart struct {
 }
 
 // DayPartition is an ordered set of DayParts that must cover the full 24h
-// exactly once (no gaps, no overlaps, modulo midnight wrap) — one source of
-// truth for both filtering ("mornings") and classification (PartOf). The
-// invariant is enforced by Validate, which makes PartOf a total function and
-// therefore a safe group-by key.
+// exactly once (no gaps, no overlaps, modulo midnight wrap), so one table
+// drives both filtering ("mornings") and classification (PartOf). Validate
+// enforces it, which makes PartOf total and a safe group-by key.
 type DayPartition []DayPart
 
 // DefaultDayPartition is the canonical partition of the day. Replace it (or
-// build a custom Vocabulary) for app-specific slicing — Validate any custom
+// build a custom Vocabulary) for app-specific slicing, and Validate any custom
 // partition first.
 //
 //nolint:gochecknoglobals // exported, replaceable default

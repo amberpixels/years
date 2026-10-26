@@ -46,7 +46,8 @@ func (ms MultiSlotSchedule) MatchesDay(t time.Time) bool {
 	return slices.Contains(ms.Days, t.Weekday())
 }
 
-// PrevMatchingDay finds the previous day matching the schedule.
+// PrevMatchingDay finds the previous day matching the schedule, or returns
+// from when no day in the past week matches.
 func (ms MultiSlotSchedule) PrevMatchingDay(from time.Time) time.Time {
 	if ms.Location != nil {
 		from = from.In(ms.Location)
@@ -120,12 +121,10 @@ func (s Schedule) MatchesTime(t time.Time) bool {
 
 	hour := t.Hour()
 
-	// Check if within overall schedule bounds
 	if hour < s.StartHour || hour >= s.EndHour {
 		return false
 	}
 
-	// Check if within any gap
 	for _, gap := range s.Gaps {
 		if hour >= gap.StartHour && hour < gap.EndHour {
 			return false
@@ -140,17 +139,16 @@ func (s Schedule) Contains(t time.Time) bool {
 	return s.MatchesDay(t) && s.MatchesTime(t)
 }
 
-// PrevMatchingDay finds the previous day matching the schedule.
-// e.g., called on Sunday -> returns Friday (for Mon-Fri schedule).
+// PrevMatchingDay finds the previous day matching the schedule, or returns
+// from when no day in the past week matches. On a Mon-Fri schedule, Sunday
+// gives Friday.
 func (s Schedule) PrevMatchingDay(from time.Time) time.Time {
 	if s.Location != nil {
 		from = from.In(s.Location)
 	}
 
-	// Start from the previous day
 	current := from.AddDate(0, 0, -1)
 
-	// Search backwards for up to 7 days (one full week)
 	for range 7 {
 		if s.MatchesDay(current) {
 			return current
@@ -158,20 +156,18 @@ func (s Schedule) PrevMatchingDay(from time.Time) time.Time {
 		current = current.AddDate(0, 0, -1)
 	}
 
-	// If no matching day found in the past week, return the input
 	return from
 }
 
-// NextMatchingDay finds the next day matching the schedule.
+// NextMatchingDay finds the next day matching the schedule, or returns from
+// when no day in the next week matches.
 func (s Schedule) NextMatchingDay(from time.Time) time.Time {
 	if s.Location != nil {
 		from = from.In(s.Location)
 	}
 
-	// Start from the next day
 	current := from.AddDate(0, 0, 1)
 
-	// Search forwards for up to 7 days (one full week)
 	for range 7 {
 		if s.MatchesDay(current) {
 			return current
@@ -179,21 +175,19 @@ func (s Schedule) NextMatchingDay(from time.Time) time.Time {
 		current = current.AddDate(0, 0, 1)
 	}
 
-	// If no matching day found in the next week, return the input
 	return from
 }
 
-// PrevNonMatchingDay finds the previous day not matching the schedule.
-// e.g., called on Monday -> returns Sunday (for Mon-Fri schedule).
+// PrevNonMatchingDay finds the previous day not matching the schedule, or
+// returns from when every day of the past week matches. On a Mon-Fri
+// schedule, Monday gives Sunday.
 func (s Schedule) PrevNonMatchingDay(from time.Time) time.Time {
 	if s.Location != nil {
 		from = from.In(s.Location)
 	}
 
-	// Start from the previous day
 	current := from.AddDate(0, 0, -1)
 
-	// Search backwards for up to 7 days (one full week)
 	for range 7 {
 		if !s.MatchesDay(current) {
 			return current
@@ -201,20 +195,18 @@ func (s Schedule) PrevNonMatchingDay(from time.Time) time.Time {
 		current = current.AddDate(0, 0, -1)
 	}
 
-	// If no non-matching day found in the past week, return the input
 	return from
 }
 
-// NextNonMatchingDay finds the next day not matching the schedule.
+// NextNonMatchingDay finds the next day not matching the schedule, or returns
+// from when every day of the next week matches.
 func (s Schedule) NextNonMatchingDay(from time.Time) time.Time {
 	if s.Location != nil {
 		from = from.In(s.Location)
 	}
 
-	// Start from the next day
 	current := from.AddDate(0, 0, 1)
 
-	// Search forwards for up to 7 days (one full week)
 	for range 7 {
 		if !s.MatchesDay(current) {
 			return current
@@ -222,6 +214,5 @@ func (s Schedule) NextNonMatchingDay(from time.Time) time.Time {
 		current = current.AddDate(0, 0, 1)
 	}
 
-	// If no non-matching day found in the next week, return the input
 	return from
 }

@@ -12,8 +12,7 @@ import (
 
 // WaypointFile is a Waypoint implementation for files/directories.
 type WaypointFile struct {
-	// Path of the waypoint
-	// It's the request field for .prepare() to be called
+	// path is the file's path and also its Identifier.
 	path string
 
 	// fileInfo holds the file info for the given file
@@ -45,7 +44,6 @@ func NewWaypointFile(path string, timeGetter func(timeSpec times.Timespec) time.
 	w := &WaypointFile{path: path, fileInfo: stat, timeSpec: timeSpec, t: timeGetter(timeSpec)}
 
 	if stat.IsDir() {
-		// Go deeper in the directory
 		innerPaths, err := filepath.Glob(filepath.Join(w.path, "*"))
 		if err != nil {
 			return nil, err
@@ -59,7 +57,7 @@ func NewWaypointFile(path string, timeGetter func(timeSpec times.Timespec) time.
 				continue
 			}
 
-			// By default, let's sort nodes in Past->Future order
+			// Insert in place so children stay sorted oldest first.
 			var inserted bool
 			for i, existed := range w.waypoints {
 				if existed.Time().After(child.t) {

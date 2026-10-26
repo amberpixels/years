@@ -9,7 +9,7 @@ type WaypointGroup struct {
 	identifier string
 }
 
-// NewWaypointGroup create a group for given waypoints.
+// NewWaypointGroup creates a group for given waypoints.
 func NewWaypointGroup(identifier string, waypoints ...Waypoint) Waypoint {
 	return &WaypointGroup{identifier: identifier, waypoints: waypoints}
 }

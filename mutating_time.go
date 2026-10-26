@@ -51,9 +51,11 @@ func (mt *MutatingTime) TruncateToHour() *MutatingTime {
 	return mt
 }
 
-// TruncateToDay sets the hour, minute, second, and nanosecond to zero.
+// TruncateToDay moves the time to the start of its day: 00:00:00, or the first
+// instant after midnight on a day whose midnight falls in a DST gap.
 func (mt *MutatingTime) TruncateToDay() *MutatingTime {
-	*mt.t = time.Date(mt.t.Year(), mt.t.Month(), mt.t.Day(), 0, 0, 0, 0, mt.t.Location())
+	y, m, d := mt.t.Date()
+	*mt.t = startOfDay(y, m, d, mt.t.Location())
 	return mt
 }
 
@@ -61,21 +63,21 @@ func (mt *MutatingTime) TruncateToDay() *MutatingTime {
 // where weekStartsOn selects which weekday begins the week (e.g. time.Monday for
 // ISO-8601 weeks, time.Sunday for US-style weeks).
 func (mt *MutatingTime) TruncateToWeek(weekStartsOn time.Weekday) *MutatingTime {
-	mt.TruncateToDay()
 	offset := (int(mt.t.Weekday()) - int(weekStartsOn) + daysInWeek) % daysInWeek
-	*mt.t = mt.t.AddDate(0, 0, -offset)
+	y, m, d := mt.t.Date()
+	*mt.t = startOfDay(y, m, d-offset, mt.t.Location())
 	return mt
 }
 
 // TruncateToMonth moves the time to the first day of its month at 00:00:00.
 func (mt *MutatingTime) TruncateToMonth() *MutatingTime {
-	*mt.t = time.Date(mt.t.Year(), mt.t.Month(), 1, 0, 0, 0, 0, mt.t.Location())
+	*mt.t = startOfDay(mt.t.Year(), mt.t.Month(), 1, mt.t.Location())
 	return mt
 }
 
 // TruncateToYear moves the time to January 1st of its year at 00:00:00.
 func (mt *MutatingTime) TruncateToYear() *MutatingTime {
-	*mt.t = time.Date(mt.t.Year(), 1, 1, 0, 0, 0, 0, mt.t.Location())
+	*mt.t = startOfDay(mt.t.Year(), 1, 1, mt.t.Location())
 	return mt
 }
 
@@ -110,7 +112,7 @@ func (mt *MutatingTime) SetDay(day int) *MutatingTime {
 	return mt
 }
 
-// SetHour sets the hour (0–23). Panics if out of range.
+// SetHour sets the hour (0-23). Panics if out of range.
 func (mt *MutatingTime) SetHour(hour int) *MutatingTime {
 	if hour < 0 || hour > 23 {
 		panic("SetHour accepts hour in [0,23]")
@@ -123,7 +125,7 @@ func (mt *MutatingTime) SetHour(hour int) *MutatingTime {
 	return mt
 }
 
-// SetMinute sets the minute (0–59). Panics if out of range.
+// SetMinute sets the minute (0-59). Panics if out of range.
 func (mt *MutatingTime) SetMinute(minute int) *MutatingTime {
 	if minute < 0 || minute > 59 {
 		panic("SetMinute accepts minute in [0,59]")
@@ -136,7 +138,7 @@ func (mt *MutatingTime) SetMinute(minute int) *MutatingTime {
 	return mt
 }
 
-// SetSecond sets the second (0–59). Panics if out of range.
+// SetSecond sets the second (0-59). Panics if out of range.
 func (mt *MutatingTime) SetSecond(second int) *MutatingTime {
 	if second < 0 || second > 59 {
 		panic("SetSecond accepts second in [0,59]")
@@ -149,7 +151,7 @@ func (mt *MutatingTime) SetSecond(second int) *MutatingTime {
 	return mt
 }
 
-// SetMillisecond sets the millisecond (0–999) by overriding the nanosecond field.
+// SetMillisecond sets the millisecond (0-999) by overriding the nanosecond field.
 // Panics if out of range.
 func (mt *MutatingTime) SetMillisecond(ms int) *MutatingTime {
 	if ms < 0 || ms > 999 {
@@ -163,7 +165,7 @@ func (mt *MutatingTime) SetMillisecond(ms int) *MutatingTime {
 	return mt
 }
 
-// SetNanosecond sets the nanosecond (0–999,999,999). Panics if out of range.
+// SetNanosecond sets the nanosecond (0-999,999,999). Panics if out of range.
 func (mt *MutatingTime) SetNanosecond(nano int) *MutatingTime {
 	if nano < 0 || nano > 999_999_999 {
 		panic("SetNanosecond accepts nanosecond in [0,999999999]")
@@ -179,4 +181,17 @@ func (mt *MutatingTime) SetNanosecond(nano int) *MutatingTime {
 // Time returns the underlying time.Time value.
 func (mt *MutatingTime) Time() time.Time {
 	return *mt.t
+}
+
+// startOfDay returns the first instant of the given calendar day in loc
+// (normalized like time.Date). Where midnight falls in a DST gap, time.Date
+// lands in the previous day, so the result is moved forward by the gap.
+func startOfDay(y int, m time.Month, d int, loc *time.Location) time.Time {
+	t := time.Date(y, m, d, 0, 0, 0, 0, loc)
+	if t.Hour() == 0 && t.Minute() == 0 {
+		return t
+	}
+	_, before := t.Zone()
+	_, after := time.Date(y, m, d, 12, 0, 0, 0, loc).Zone()
+	return t.Add(time.Duration(after-before) * time.Second)
 }

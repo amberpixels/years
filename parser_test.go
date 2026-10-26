@@ -118,3 +118,30 @@ func TestParser_WithCustomAliases(t *testing.T) {
 	_, err = freshParser.JustParse("day-after-tomorrow")
 	be.Expect(t, err).To(be.HaveOccurred())
 }
+
+func TestParser_WithCustomAliases_OverridesAndOrder(t *testing.T) {
+	// Friday.
+	mockClock := &StaticClock{
+		now: time.Date(2024, time.March, 0o1, 14, 30, 59, 0, time.UTC),
+	}
+	fixed := time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)
+
+	// The week start given after the custom aliases still applies, and a
+	// custom alias overrides the same-named core one.
+	parser := years.NewParser(
+		years.WithCustomClock(mockClock),
+		years.AcceptAliases(),
+		years.WithCustomAliases(map[string]func(time.Time) time.Time{
+			"today": func(time.Time) time.Time { return fixed },
+		}),
+		years.WithWeekStart(time.Monday),
+	)
+
+	today, err := parser.JustParse("today")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, today.String()).To(be.Eq(fixed.String()))
+
+	thisWeek, err := parser.JustParse("this-week")
+	be.Require(t, err).To(be.Succeed())
+	be.Expect(t, thisWeek.String()).To(be.Eq(`2024-02-26 00:00:00 +0000 UTC`))
+}

@@ -13,22 +13,19 @@ func (ts TimeSlot) Duration() time.Duration {
 	return ts.End.Sub(ts.Start)
 }
 
-// SlotsForDay generates hour slots for a single day
-// If gaps are configured, returns multiple slots (split by gaps).
+// SlotsForDay generates the schedule's hour slots for a single day, split
+// around Gaps, which must be sorted by start hour.
 func (s Schedule) SlotsForDay(day time.Time) []TimeSlot {
 	if s.Location != nil {
 		day = day.In(s.Location)
 	}
 
-	// Check if this day matches the schedule
 	if !s.MatchesDay(day) {
 		return nil
 	}
 
-	// Normalize to start of day
 	dayStart := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, day.Location())
 
-	// If no gaps, return a single slot
 	if len(s.Gaps) == 0 {
 		return []TimeSlot{
 			{
@@ -38,18 +35,15 @@ func (s Schedule) SlotsForDay(day time.Time) []TimeSlot {
 		}
 	}
 
-	// Build slots with gaps
 	var slots []TimeSlot
 	currentStart := s.StartHour
 
-	// Sort gaps by start hour (assuming they're already sorted, but being defensive)
+	// Walked in the given order; nothing sorts the gaps here.
 	for _, gap := range s.Gaps {
-		// Skip gaps outside schedule bounds
 		if gap.EndHour <= s.StartHour || gap.StartHour >= s.EndHour {
 			continue
 		}
 
-		// Add slot before gap
 		gapStart := max(gap.StartHour, s.StartHour)
 
 		if currentStart < gapStart {
@@ -59,12 +53,10 @@ func (s Schedule) SlotsForDay(day time.Time) []TimeSlot {
 			})
 		}
 
-		// Move current start to after gap
 		gapEnd := min(gap.EndHour, s.EndHour)
 		currentStart = gapEnd
 	}
 
-	// Add final slot after last gap
 	if currentStart < s.EndHour {
 		slots = append(slots, TimeSlot{
 			Start: dayStart.Add(time.Duration(currentStart) * time.Hour),
@@ -75,7 +67,8 @@ func (s Schedule) SlotsForDay(day time.Time) []TimeSlot {
 	return slots
 }
 
-// SlotsForRange generates slots across multiple days.
+// SlotsForRange generates slots for every day from from's date through to's
+// date, both inclusive.
 func (s Schedule) SlotsForRange(from, to time.Time) []TimeSlot {
 	if s.Location != nil {
 		from = from.In(s.Location)
@@ -84,7 +77,6 @@ func (s Schedule) SlotsForRange(from, to time.Time) []TimeSlot {
 
 	var slots []TimeSlot
 
-	// Normalize from to start of day
 	current := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, from.Location())
 	endDate := time.Date(to.Year(), to.Month(), to.Day(), 23, 59, 59, 0, to.Location())
 

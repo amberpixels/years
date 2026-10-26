@@ -7,14 +7,11 @@ import (
 	"time"
 )
 
-// Period is a half-open time interval [Start, End): Start belongs to the
-// period, End does not. Calendar expressions denote periods rather than
-// instants — "yesterday" is a whole day, "last-week" a whole week, and a plain
-// date like "2024-03-06" a day — so parsing them with ParsePeriod yields the
-// full interval; take .Start or .End when a single bound is needed (e.g. a
-// range query's inclusive lower / exclusive upper bound). A point in time (an
-// RFC3339 timestamp, a unix epoch) parses to an instant period whose End
-// equals its Start.
+// Period is a half-open time interval [Start, End). Calendar expressions
+// denote periods, not instants: "yesterday" is a whole day, "last-week" a
+// whole week, "2024-03-06" a day. Start and End serve directly as a range
+// query's inclusive lower and exclusive upper bound. A point in time (an
+// RFC3339 timestamp, a unix epoch) is an instant period: End equals Start.
 type Period struct {
 	Start time.Time
 	End   time.Time
@@ -39,15 +36,16 @@ func (p Period) Contains(t time.Time) bool {
 	return !t.Before(p.Start) && t.Before(p.End)
 }
 
-// aliasPeriodSpans advances an alias period's start to its exclusive end —
-// one entry per core alias family (day, week, month, year). Weekend aliases
-// are handled separately in periodForAlias.
+// aliasPeriodSpans advances each core alias's period start to its exclusive
+// end. Weekend aliases are not here: periodForAlias builds them directly.
 //
-//nolint:gochecknoglobals // read-only span table, mirrors coreAliases
+//nolint:gochecknoglobals // read-only span table, mirrors coreAliasesFor
 var aliasPeriodSpans = map[string]func(start time.Time) time.Time{
 	"today":     nextDay,
 	"yesterday": nextDay,
 	"tomorrow":  nextDay,
+
+	aliasLastWorkday: nextDay,
 
 	"this-week": nextWeek,
 	"last-week": nextWeek,
@@ -62,19 +60,24 @@ var aliasPeriodSpans = map[string]func(start time.Time) time.Time{
 	"next-year": nextYear,
 }
 
-func nextDay(t time.Time) time.Time   { return t.AddDate(0, 0, 1) }
-func nextWeek(t time.Time) time.Time  { return t.AddDate(0, 0, daysInWeek) }
-func nextMonth(t time.Time) time.Time { return t.AddDate(0, 1, 0) }
-func nextYear(t time.Time) time.Time  { return t.AddDate(1, 0, 0) }
+// The spans step by calendar date from a period start, so an end on a day
+// whose midnight falls in a DST gap is that day's first instant.
+func nextDay(t time.Time) time.Time  { return dayStartFrom(t, 1) }
+func nextWeek(t time.Time) time.Time { return dayStartFrom(t, daysInWeek) }
+func nextMonth(t time.Time) time.Time {
+	return startOfDay(t.Year(), t.Month()+1, t.Day(), t.Location())
+}
+
+func nextYear(t time.Time) time.Time {
+	return startOfDay(t.Year()+1, t.Month(), t.Day(), t.Location())
+}
 
 const daysInWeekend = 2
 
 // periodForAlias resolves a registered alias to its full period at base time.
-// The start comes from the alias's instant callback so custom overrides stay
-// honored; the end is the start advanced by the alias's calendar span. A
-// custom alias with no known span degrades to an instant period. Weekend
-// periods are computed directly as [Saturday 00:00, +2d) — the historical
-// instant callbacks for weekends don't coincide with the period start.
+// The start comes from the alias callback so custom overrides are honored; a
+// custom alias with no known span is an instant period. Weekends are built as
+// [Saturday 00:00, +2d), since the last-weekend instant is the Friday before.
 func (p *Parser) periodForAlias(alias string, base time.Time) (Period, bool) {
 	cb, known := p.aliases[alias]
 	if !known {
@@ -83,16 +86,12 @@ func (p *Parser) periodForAlias(alias string, base time.Time) (Period, bool) {
 
 	switch alias {
 	case aliasNextWeekend, aliasLastWeekend:
-		step := 1
+		offset := daysUntilSaturday(base)
 		if alias == aliasLastWeekend {
-			step = -1
+			offset = -daysSinceSaturday(base)
 		}
-		sat := base
-		for sat.Weekday() != time.Saturday {
-			sat = sat.AddDate(0, 0, step)
-		}
-		start := Mutate(&sat).TruncateToDay().Time()
-		return Period{Start: start, End: start.AddDate(0, 0, daysInWeekend)}, true
+		start := dayStartFrom(base, offset)
+		return Period{Start: start, End: dayStartFrom(start, daysInWeekend)}, true
 	}
 
 	start := cb(base)
@@ -103,9 +102,8 @@ func (p *Parser) periodForAlias(alias string, base time.Time) (Period, bool) {
 	return Period{Start: start, End: span(start)}, true
 }
 
-// relativeOffsetRe matches duration-offset expressions — a count and a
-// calendar unit: "12h", "7d", "2w", "3mo", "1y". An offset denotes the period
-// spanning the last N units: [now − N·unit, now).
+// relativeOffsetRe matches a count and a calendar unit: "12h", "7d", "2w",
+// "3mo", "1y". An offset denotes the last N units: [now - N units, now).
 //
 //nolint:gochecknoglobals // compiled once
 var relativeOffsetRe = regexp.MustCompile(`^(\d{1,4})(h|d|w|mo|y)$`)
@@ -133,8 +131,8 @@ func parseRelativeOffset(value string, now time.Time) (Period, bool) {
 }
 
 // layoutIsDateOnly reports whether a Go layout carries no clock components, so
-// its finest unit is a whole day. Go's hour tokens are "15", "03" and "3:" —
-// none of which appear in pure date layouts ("2006-01-02", "02 Jan 2006", …).
+// its finest unit is a whole day. It looks for Go's hour tokens "15", "03" and
+// "3:", none of which appear in date layouts such as "2006-01-02".
 func layoutIsDateOnly(layout string) bool {
 	return !strings.Contains(layout, "15") &&
 		!strings.Contains(layout, "03") &&
@@ -143,20 +141,20 @@ func layoutIsDateOnly(layout string) bool {
 
 // ParsePeriod parses value into the Period it denotes, using the given layout
 // (or all of the parser's accepted layouts when layout is empty):
-//   - a registered alias resolves to its calendar period ("yesterday" → that
-//     whole day, "last-week" → that whole week);
-//   - a relative offset ("7d", "2w") resolves to [now − offset, now);
+//   - a registered alias resolves to its calendar period ("yesterday" to that
+//     whole day, "last-week" to that whole week);
+//   - a relative offset ("7d", "2w") resolves to [now - offset, now);
 //   - a value matching a date-only layout resolves to that whole day;
 //   - anything else Parse understands (timestamps, epochs) resolves to an
 //     instant period.
 func (p *Parser) ParsePeriod(layout, value string) (Period, error) {
 	if p.acceptAliases {
-		if period, ok := p.periodForAlias(value, p.clock.Now()); ok {
+		if period, ok := p.periodForAlias(value, p.now()); ok {
 			return period, nil
 		}
 	}
 	if p.acceptRelativeOffsets {
-		if period, ok := parseRelativeOffset(value, p.clock.Now()); ok {
+		if period, ok := parseRelativeOffset(value, p.now()); ok {
 			return period, nil
 		}
 	}
@@ -169,12 +167,12 @@ func (p *Parser) ParsePeriod(layout, value string) (Period, error) {
 		if ParseLayout(l).Format != LayoutFormatGo {
 			continue
 		}
-		t, err := time.Parse(l, value)
+		t, err := p.parseGoLayout(l, value)
 		if err != nil {
 			continue
 		}
 		if layoutIsDateOnly(l) {
-			return Period{Start: t, End: t.AddDate(0, 0, 1)}, nil
+			return Period{Start: t, End: nextDay(t)}, nil
 		}
 		return InstantPeriod(t), nil
 	}

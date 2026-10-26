@@ -2,4 +2,4 @@
 // to be used in `_test.go` files.
 package years
 
-var CoreAliases = coreAliases
+var CoreAliases = defaultCoreAliases
