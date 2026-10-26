@@ -153,12 +153,12 @@ func layoutIsDateOnly(layout string) bool {
 //     instant period.
 func (p *Parser) ParsePeriod(layout, value string) (Period, error) {
 	if p.acceptAliases {
-		if period, ok := p.periodForAlias(value, p.clock.Now()); ok {
+		if period, ok := p.periodForAlias(value, p.now()); ok {
 			return period, nil
 		}
 	}
 	if p.acceptRelativeOffsets {
-		if period, ok := parseRelativeOffset(value, p.clock.Now()); ok {
+		if period, ok := parseRelativeOffset(value, p.now()); ok {
 			return period, nil
 		}
 	}
@@ -171,7 +171,7 @@ func (p *Parser) ParsePeriod(layout, value string) (Period, error) {
 		if ParseLayout(l).Format != LayoutFormatGo {
 			continue
 		}
-		t, err := time.Parse(l, value)
+		t, err := p.parseGoLayout(l, value)
 		if err != nil {
 			continue
 		}
