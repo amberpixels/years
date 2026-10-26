@@ -17,7 +17,6 @@ func TestStdClock_NowIsCloseToTimeNow(t *testing.T) {
 	now := clock.Now()
 	end := time.Now()
 
-	// The returned time should be between start and end
 	be.Expect(t, now).To(be_time.LaterThanEqual(start))
 	be.Expect(t, now).To(be_time.EarlierThanEqual(end))
 }

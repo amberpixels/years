@@ -2,10 +2,8 @@ package years
 
 import "time"
 
-// Canonical display layouts shared across amberpixels apps, centralized here so
-// callers stop re-typing the Go reference-time magic strings. These are the
-// formatting counterparts to the parser: build a time with Parse/JustParse,
-// render it with Format and one of these layouts.
+// Display layouts, the formatting counterparts to the parser: build a time with
+// Parse or JustParse, render it with Format and one of these layouts.
 const (
 	// LayoutDate is a calendar date: "2006-01-02".
 	LayoutDate = "2006-01-02"

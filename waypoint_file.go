@@ -15,21 +15,22 @@ type WaypointFile struct {
 	// path is the file's path and also its Identifier.
 	path string
 
-	// fileInfo holds the file info for the given file
 	fileInfo os.FileInfo
 
 	// timeSpec holds cross-platform file time creation/modification/access/birth information
 	timeSpec times.Timespec
 
-	// t is the time of the waypoint
 	t time.Time
 
-	// Waypoints are inner children (subdirectories, files, etc)
+	// waypoints are a directory's entries, sorted oldest first.
 	waypoints []Waypoint
 }
 
 type WaypointFiles []*WaypointFile
 
+// NewWaypointFile builds a waypoint for path and, for a directory, every
+// entry below it. timeGetter picks which file time (birth, modification, ...)
+// each waypoint carries. An entry that fails to stat is logged and skipped.
 func NewWaypointFile(path string, timeGetter func(timeSpec times.Timespec) time.Time) (*WaypointFile, error) {
 	stat, err := os.Stat(path)
 	if err != nil {

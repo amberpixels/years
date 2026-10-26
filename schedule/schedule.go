@@ -94,7 +94,7 @@ type Schedule struct {
 	StartHour int            // e.g., 9
 	EndHour   int            // e.g., 17
 	Gaps      []TimeRange    // optional gaps (e.g., lunch: [{12, 13}])
-	Location  *time.Location // timezone
+	Location  *time.Location // nil reads times in their own location
 }
 
 // DefaultWorkingHoursSchedule is a standard Monday-Friday 9-17 working hours schedule.

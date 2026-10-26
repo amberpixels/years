@@ -13,12 +13,14 @@ type WaypointString struct {
 	// parser's layouts.
 	layout string
 
-	// t is the time of the waypoint
 	t time.Time
 }
 
 type WaypointStrings []*WaypointString
 
+// NewWaypointString parses v with the optional layout, or the parser's layouts
+// when none is given. A v that does not parse becomes a non-calendar waypoint
+// with a zero time and an empty identifier.
 func NewWaypointString(v string, layoutArg ...string) *WaypointString {
 	w := &WaypointString{timeInput: v}
 	if len(layoutArg) > 0 {
@@ -27,7 +29,7 @@ func NewWaypointString(v string, layoutArg ...string) *WaypointString {
 
 	var err error
 
-	// Default parser is used. Use years.SetParserDefaults to configure parsing
+	// NewParser() takes the package defaults; configure them with SetParserDefaults.
 	w.t, err = NewParser().Parse(w.layout, w.timeInput)
 	if err != nil {
 		w.setNonCalendar()

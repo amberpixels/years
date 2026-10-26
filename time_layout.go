@@ -13,7 +13,7 @@ type DateUnit int
 const UnitUndefined DateUnit = 0
 
 const (
-	// Day as day of the month
+	// Day is the day of the month.
 	// TODO(nice-to-have) support day of the week + day of the year.
 	Day  DateUnit = 1 << iota
 	Week          // not supported yet
@@ -21,8 +21,8 @@ const (
 	Quarter // not supported yet
 	Year
 
-	// UnixSecond as well as UnixMillisecond, UnixMicrosecond, UnixNanosecond
-	// are special units for Unix timestamps.
+	// UnixSecond and the finer Unix units are the precision of a unix
+	// timestamp layout (U@, U@000, ...).
 	UnixSecond
 	UnixMillisecond
 	UnixMicrosecond
@@ -119,6 +119,8 @@ var LayoutFormatDict = struct {
 	UnixTimestamp: LayoutFormatUnixTimestamp,
 }
 
+// Unix timestamp tokens: U@ reads seconds and each 000 adds three digits of
+// precision, so "logs-U@000.log" reads milliseconds.
 const (
 	LayoutTimestampSeconds      = "U@"
 	LayoutTimestampMilliseconds = "U@000"
@@ -129,13 +131,14 @@ const (
 // LayoutDetails stores parsed meta information about a layout string such as
 // "2006-01-02".
 type LayoutDetails struct {
-	// MinimalUnit e.g. Day for "2006-01-02" and Month for "2006-01"
+	// MinimalUnit is the finest unit in the layout: Day for "2006-01-02",
+	// Month for "2006-01".
 	MinimalUnit DateUnit
 
-	// Format is the format of the time used in the layout
+	// Format is how the layout is read: as a Go layout or a unix timestamp.
 	Format LayoutFormat
 
-	// Units met in layout
+	// Units lists every unit found in the layout.
 	Units []DateUnit
 }
 
@@ -149,10 +152,8 @@ func (lm *LayoutDetails) HasUnit(q DateUnit) bool {
 func ParseLayout(layout string) *LayoutDetails {
 	result := &LayoutDetails{Units: make([]DateUnit, 0)}
 
-	// Day of the month: "2" "_2" "02"
-	// weak check for now via regex: 2 not followed by 0 because of 2006
-	// TODO: stronger check: 2 should not be part of 2006
-	//       also `_2` should not be confused with __2
+	// Day of the month: "2" "_2" "02". A 2 followed by 0 is skipped for 2006.
+	// TODO: rule out any 2 inside 2006, and tell `_2` apart from `__2`.
 	twoNotFollowedByZero := regexp.MustCompile(`2([^0]|$)`)
 	containsDay := strings.Contains(layout, "_2") || strings.Contains(layout, "02") ||
 		twoNotFollowedByZero.MatchString(layout)
@@ -162,9 +163,8 @@ func ParseLayout(layout string) *LayoutDetails {
 		result.Units = append(result.Units, Day)
 	}
 
-	// Reference for future:
-	//	Day of the week: "Mon" "Monday"
-	//	Day of the year: "__2" "002"
+	// Not detected yet: day of the week ("Mon" "Monday") and day of the year
+	// ("__2" "002").
 
 	// Month: "Jan" "January" "01" "1"
 	oneNotFollowedByFive := regexp.MustCompile(`0?1([^5]|$)`) // `1` is month but `15` are hours

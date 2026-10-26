@@ -5,14 +5,16 @@ import (
 	"slices"
 )
 
-// Voyager is a wrapper for a waypoint that allows for traversing through it.
+// Voyager walks a waypoint tree in time order and finds waypoints by time.
 type Voyager struct {
 	root Waypoint
 
-	// parser is used for parsing time when needed (e.g. when navigating).
+	// parser reads the time strings given to Navigate and Find.
 	parser *Parser
 }
 
+// NewVoyager wraps root for traversal. The optional parser reads Navigate and
+// Find queries; it defaults to NewParser().
 func NewVoyager(root Waypoint, parserArg ...*Parser) *Voyager {
 	v := &Voyager{root: root, parser: NewParser()}
 	if len(parserArg) > 0 {
@@ -106,7 +108,10 @@ func O_NON_CALENDAR() TraverseOption {
 	return func(o *traverseConfig) { o.includeNonCalendarNodes = true }
 }
 
-// Traverse traverses through a given waypoint (all its children recursively).
+// Traverse calls cb for the root and every descendant in time order: newest
+// first by default (O_PAST), oldest first with O_FUTURE. O_LEAVES_ONLY,
+// O_CONTAINERS_ONLY and O_ALL (default) pick the nodes; waypoints with no time
+// are skipped unless O_NON_CALENDAR is given.
 func (v *Voyager) Traverse(cb func(w Waypoint), opts ...TraverseOption) error {
 	config := defaultTraverseConfig()
 	for _, opt := range opts {
@@ -148,8 +153,9 @@ func (v *Voyager) Traverse(cb func(w Waypoint), opts ...TraverseOption) error {
 	return nil
 }
 
-// Navigate returns the first found Waypoint that matches given time (as a string).
-// E.g. Navigate("yesterday") returns waypoint corresponding to the yesterday's date.
+// Navigate returns the first waypoint, in traversal order, whose time equals
+// the parsed to, or nil when none does: Navigate("yesterday") finds the
+// waypoint at the start of yesterday.
 func (v *Voyager) Navigate(to string) (Waypoint, error) {
 	navigateTo, err := v.parser.Parse("", to)
 	if err != nil {

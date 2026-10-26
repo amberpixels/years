@@ -458,13 +458,13 @@ func TestVoyager_TimeNamedFile_LogsViaTimestamp(t *testing.T) {
 
 	t.Run("traverse Future / Containers only", func(t *testing.T) {
 		identifiers := collectTraverse(t, v, years.O_FUTURE(), years.O_CONTAINERS_ONLY())
-		// no containers actually
+		// The tree holds only files.
 		be.Expect(t, identifiers).To(be.Eq([]string{}))
 	})
 
 	t.Run("traverse Future / All", func(t *testing.T) {
 		identifiers := collectTraverse(t, v, years.O_FUTURE(), years.O_ALL())
-		// no containers - so ALL means same as leaves only
+		// With no containers, ALL is the same as leaves only.
 		be.Expect(t, identifiers).To(be.Eq([]string{
 			"internal/testdata/logs_via_timestamp/foobar_1716559191.log",
 			"internal/testdata/logs_via_timestamp/foobar_1716559238.log",

@@ -1,5 +1,4 @@
-// export_test.go declares exported variables/functions from internal ones
-// to be used in `_test.go` files.
+// export_test.go exposes internals to the external years_test package.
 package years
 
 var CoreAliases = defaultCoreAliases

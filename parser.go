@@ -115,7 +115,8 @@ func WithLocation(loc *time.Location) ParserOption {
 	}
 }
 
-// WithCustomClock opts to enable a custom Clock.
+// WithCustomClock makes the parser read the current time from c instead of
+// the package clock (see SetStdClock).
 func WithCustomClock(c Clock) ParserOption {
 	return func(p *Parser) { p.clock = c }
 }
@@ -138,6 +139,8 @@ var DefaultLayouts = []string{
 	LayoutDate,
 }
 
+// ResetParserDefaults restores the package defaults: unix seconds, aliases,
+// relative offsets and DefaultLayouts.
 func ResetParserDefaults() {
 	SetParserDefaults(
 		AcceptUnixSeconds(),
@@ -156,6 +159,10 @@ func ExtendParserDefaults(opts ...ParserOption) {
 	defaultParserOptions = append(defaultParserOptions, opts...)
 }
 
+// NewParser builds a parser from options, or from the package defaults (see
+// SetParserDefaults) when given none; given options replace the defaults
+// rather than extend them. It starts on the package clock, with Sunday week
+// starts and Monday to Friday working days.
 func NewParser(options ...ParserOption) *Parser {
 	p := &Parser{
 		clock:     stdClock,
@@ -207,8 +214,8 @@ func (p *Parser) ParseEpoch(v int64) (time.Time, bool, error) {
 	)
 
 	// Plausible window: [1970-01-01, 3000-01-01).
-	timestampMin := time.Unix(0, 0)                             // 1970-01-01
-	timestampMax := time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC) // 3000-01-01
+	timestampMin := time.Unix(0, 0)
+	timestampMax := time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	type cand struct {
 		t   time.Time
@@ -341,7 +348,7 @@ func (p *Parser) Parse(layout, value string) (time.Time, error) {
 	return time.Time{}, errors.New("unable to parse time")
 }
 
-// JustParse is a shortcut for Parse("", value) (so using all parser's accepted layouts).
+// JustParse is Parse("", value): every accepted layout is tried.
 func (p *Parser) JustParse(value string) (time.Time, error) {
 	return p.Parse("", value)
 }

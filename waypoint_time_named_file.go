@@ -18,16 +18,19 @@ type TimeNamedWaypointFile struct {
 	// with the parents' names when the layout needs them.
 	timeInput string
 
-	// layout is a full layout (knowing required parent's layout information)
-	// e.g. "2006/Jan"
+	// layout is this node's layout joined with its parents', e.g. "2006/Jan".
 	layout string
 
-	// Unit of waypoint representing the duration unit (day|month|year)
+	// unit is the finest date unit of layout: Day, Month or Year.
 	unit DateUnit
 }
 
 type TimeNamedWaypointFiles []*TimeNamedWaypointFile
 
+// NewTimeNamedWaypointFile reads the time of path and every entry below it
+// from their names, using the matching segments of fullLayout, a
+// path-separated layout such as "2006/Jan/2006-01-02.txt". A name that does
+// not parse becomes a non-calendar waypoint.
 func NewTimeNamedWaypointFile(
 	path string, fullLayout string,
 	parentArg ...*TimeNamedWaypointFile,
@@ -40,7 +43,7 @@ func NewTimeNamedWaypointFile(
 	w := &TimeNamedWaypointFile{WaypointFile: w0}
 
 	fullLayoutParts := strings.Split(fullLayout, string(os.PathSeparator))
-	layout := fullLayoutParts[0] // by default layout would be first part of layout parts
+	layout := fullLayoutParts[0] // a root node takes the first segment
 
 	w.timeInput = w.fileInfo.Name()
 
@@ -62,7 +65,7 @@ func NewTimeNamedWaypointFile(
 	layout = strings.TrimPrefix(layout, string(os.PathSeparator))
 	w.layout = layout
 
-	// Default parser is used. Use years.SetParserDefaults to configure parsing
+	// NewParser() takes the package defaults; configure them with SetParserDefaults.
 	w.t, err = NewParser().Parse(layout, w.timeInput)
 	if err != nil {
 		w.setNonCalendar()

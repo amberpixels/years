@@ -38,7 +38,6 @@ func (s Schedule) SlotsForDay(day time.Time) []TimeSlot {
 	var slots []TimeSlot
 	currentStart := s.StartHour
 
-	// Walked in the given order; nothing sorts the gaps here.
 	for _, gap := range s.Gaps {
 		if gap.EndHour <= s.StartHour || gap.StartHour >= s.EndHour {
 			continue

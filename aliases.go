@@ -63,7 +63,7 @@ func coreAliasesFor(weekStart time.Weekday, workdays [daysInWeek]bool) map[strin
 		aliasLastWeekend: func(base time.Time) time.Time {
 			return dayStartFrom(base, -daysSinceSaturday(base)-1)
 		},
-		// the most recent working day strictly before base's day.
+		// The most recent working day strictly before base's day.
 		aliasLastWorkday: func(base time.Time) time.Time {
 			var day time.Time
 			for i := 1; i <= daysInWeek; i++ {

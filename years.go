@@ -18,7 +18,7 @@ func JustParse(value string) (time.Time, error) {
 }
 
 // JustParseRaw attempts to convert or parse any value into a time.Time.
-// - If value is time.Time (or custom type convertible to time.Time) the underlined time.Time is returned.
+// - If value is time.Time (or custom type convertible to time.Time) the underlying time.Time is returned.
 // - If value is a string or custom string type, passes to JustParse.
 // - If value implements fmt.Stringer, uses its String() to be parsed via JustParse.
 // - If value is a numeric type (int, uint, float), stringifies and passes to JustParse.
